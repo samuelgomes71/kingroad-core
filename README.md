@@ -1,3 +1,5 @@
+Este projeto é proprietário. Nenhuma parte do código pode ser copiada, modificada ou redistribuída sem permissão
+
 KING ROAD - RESUMO DO PROJETO
 
 1. STATUS: Em desenvolvimento
