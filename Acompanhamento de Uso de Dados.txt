@@ -1,0 +1,45 @@
+import android.content.Context
+import androidx.room.Room
+import java.util.*
+
+object DataUsageTracker {
+
+    private lateinit var db: AppDatabase
+
+    fun initialize(context: Context) {
+        db = Room.databaseBuilder(
+            context,
+            AppDatabase::class.java, "data-usage-db"
+        ).build()
+    }
+
+    suspend fun registerDataUsage(feature: String, bytesTransferred: Long) {
+        val timestamp = System.currentTimeMillis()
+        val record = DataUsageRecord(timestamp, feature, bytesTransferred)
+        db.dataUsageDao().insert(record)
+    }
+
+    suspend fun getFeatureDataUsage(year: Int, month: Int): Map<String, Long> {
+        val calendar = Calendar.getInstance()
+        calendar.set(year, month - 1, 1, 0, 0, 0)
+        val startTime = calendar.timeInMillis
+        calendar.add(Calendar.MONTH, 1)
+        val endTime = calendar.timeInMillis
+
+        val usageByFeature = mutableMapOf<String, Long>()
+        val records = db.dataUsageDao().getUsageRecords(startTime, endTime)
+        for (record in records) {
+            usageByFeature[record.feature] = usageByFeature.getOrDefault(record.feature, 0L) + record.bytesTransferred
+        }
+        return usageByFeature
+    }
+
+    fun formatUsage(bytes: Long): String {
+        return when {
+            bytes < 1024 -> "$bytes B"
+            bytes < 1024 * 1024 -> "${bytes / 1024} KB"  
+            bytes < 1024 * 1024 * 1024 -> "${bytes / (1024 * 1024)} MB"
+            else -> "${bytes / (1024 * 1024 * 1024)} GB"
+        }
+    }
+}
