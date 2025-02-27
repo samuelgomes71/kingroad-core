@@ -1,0 +1,123 @@
+import React, { useState } from 'react';
+import { AlertTriangle, Shield, MapPin, ThumbsUp, Info, Clock } from 'lucide-react';
+
+const SecurityAlertInterface = () => {
+  const [showRiskDetails, setShowRiskDetails] = useState(false);
+  
+  return (
+    <div className="h-screen bg-[#121212]">
+      {/* Alerta de área de risco */}
+      <div className="bg-[#6B2D2D] p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <AlertTriangle size={24} className="text-red-300" />
+            <div>
+              <h2 className="text-lg font-bold text-red-100">Área de Risco</h2>
+              <p className="text-red-200">Região com histórico de furtos</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setShowRiskDetails(!showRiskDetails)}
+            className="p-2 bg-[#8B3D3D] rounded-lg"
+          >
+            <Info size={20} className="text-red-200" />
+          </button>
+        </div>
+      </div>
+
+      {/* Detalhes dos riscos */}
+      {showRiskDetails && (
+        <div className="p-4 bg-[#1E1E1E]">
+          <div className="space-y-4">
+            <div className="bg-[#252525] p-3 rounded-lg">
+              <div className="flex items-center space-x-2 mb-2">
+                <Shield size={20} className="text-red-500" />
+                <span className="text-red-100 font-medium">Alto Risco</span>
+              </div>
+              <p className="text-gray-300 text-sm">
+                Múltiplos relatos de furto de combustível e pneus nas últimas 24h
+              </p>
+            </div>
+
+            {/* Estatísticas */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-[#252525] p-3 rounded-lg">
+                <span className="text-gray-400 text-sm">Últimos 30 dias</span>
+                <div className="text-2xl font-bold text-red-400 mt-1">12</div>
+                <span className="text-gray-300 text-sm">Incidentes reportados</span>
+              </div>
+              
+              <div className="bg-[#252525] p-3 rounded-lg">
+                <span className="text-gray-400 text-sm">Horário crítico</span>
+                <div className="text-2xl font-bold text-yellow-400 mt-1">23h-4h</div>
+                <span className="text-gray-300 text-sm">Maior incidência</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lista de incidentes recentes */}
+      <div className="p-4">
+        <h3 className="text-lg font-bold text-gray-200 mb-3">Relatos Recentes</h3>
+        
+        <div className="space-y-3">
+          {/* Incidente */}
+          <div className="bg-[#1E1E1E] rounded-lg p-4">
+            <div className="flex justify-between items-start mb-2">
+              <div className="flex items-center space-x-2">
+                <MapPin size={20} className="text-red-500" />
+                <span className="text-gray-200 font-medium">BR-277 km 42</span>
+              </div>
+              <Clock size={16} className="text-gray-500" />
+            </div>
+            <p className="text-gray-300 text-sm mb-2">
+              Tentativa de furto de combustível durante a noite.
+            </p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 text-sm text-gray-400">
+                <ThumbsUp size={16} />
+                <span>8 confirmações</span>
+              </div>
+              <span className="text-sm text-gray-500">2h atrás</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recomendações de segurança */}
+      <div className="p-4">
+        <h3 className="text-lg font-bold text-gray-200 mb-3">Recomendações</h3>
+        
+        <div className="bg-[#1A4B81] rounded-lg p-4">
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Shield size={20} className="text-blue-300" />
+              <span className="text-blue-100">Locais seguros próximos</span>
+            </div>
+            
+            <div className="bg-[#1E5A9A] p-3 rounded-lg">
+              <div className="flex justify-between items-center">
+                <div>
+                  <div className="text-blue-100 font-medium">Posto Seguro</div>
+                  <div className="text-blue-200 text-sm">2.5 km - Vigilância 24h</div>
+                </div>
+                <MapPin size={20} className="text-blue-300" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Botão de reportar */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#1E1E1E]">
+        <button className="w-full bg-red-600 text-white p-4 rounded-lg font-medium flex items-center justify-center">
+          <AlertTriangle size={20} className="mr-2" />
+          Reportar Incidente
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default SecurityAlertInterface;

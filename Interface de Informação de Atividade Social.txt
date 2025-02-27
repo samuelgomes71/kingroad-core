@@ -1,0 +1,137 @@
+import React, { useState } from 'react';
+import { MapPin, Eye, EyeOff, Settings, BellRing } from 'lucide-react';
+
+const SocialInfoInterface = () => {
+  const [showSettings, setShowSettings] = useState(false);
+  const [preferences, setPreferences] = useState({
+    showInfo: false,
+    avoidLocations: false,
+    notifyNearby: false
+  });
+  
+  return (
+    <div className="h-screen bg-[#121212]">
+      {/* Configurações */}
+      <div className="bg-[#1E1E1E] p-4 flex justify-between items-center">
+        <div className="text-white text-xl font-bold">Preferências de Local</div>
+        <button 
+          onClick={() => setShowSettings(!showSettings)}
+          className="p-2 rounded-lg bg-[#252525]"
+        >
+          <Settings size={24} className="text-gray-300" />
+        </button>
+      </div>
+
+      {/* Configurações expandidas */}
+      {showSettings && (
+        <div className="p-4 bg-[#252525]">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-gray-200 font-medium">Mostrar Informações</div>
+                <div className="text-sm text-gray-400">
+                  Exibir ícones no mapa
+                </div>
+              </div>
+              <button 
+                onClick={() => setPreferences({
+                  ...preferences,
+                  showInfo: !preferences.showInfo
+                })}
+                className="p-2 rounded-lg bg-[#1E1E1E]"
+              >
+                {preferences.showInfo ? (
+                  <Eye size={24} className="text-blue-400" />
+                ) : (
+                  <EyeOff size={24} className="text-gray-400" />
+                )}
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-gray-200 font-medium">Evitar Locais</div>
+                <div className="text-sm text-gray-400">
+                  Calcular rotas alternativas
+                </div>
+              </div>
+              <button 
+                onClick={() => setPreferences({
+                  ...preferences,
+                  avoidLocations: !preferences.avoidLocations
+                })}
+                className="p-2 rounded-lg bg-[#1E1E1E]"
+              >
+                {preferences.avoidLocations ? (
+                  <MapPin size={24} className="text-blue-400" />
+                ) : (
+                  <MapPin size={24} className="text-gray-400" />
+                )}
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-gray-200 font-medium">Notificações</div>
+                <div className="text-sm text-gray-400">
+                  Alertar proximidade
+                </div>
+              </div>
+              <button 
+                onClick={() => setPreferences({
+                  ...preferences,
+                  notifyNearby: !preferences.notifyNearby
+                })}
+                className="p-2 rounded-lg bg-[#1E1E1E]"
+              >
+                {preferences.notifyNearby ? (
+                  <BellRing size={24} className="text-blue-400" />
+                ) : (
+                  <BellRing size={24} className="text-gray-400" />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Legenda de ícones */}
+      {preferences.showInfo && (
+        <div className="p-4">
+          <div className="bg-[#1E1E1E] rounded-lg p-4">
+            <div className="text-gray-200 font-medium mb-3">Legenda</div>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                  F
+                </div>
+                <span className="text-gray-300">Ponto Feminino</span>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center">
+                  M
+                </div>
+                <span className="text-gray-300">Ponto Masculino</span>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <div className="flex -space-x-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                    F
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center">
+                    M
+                  </div>
+                </div>
+                <span className="text-gray-300">Ambos</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default SocialInfoInterface;

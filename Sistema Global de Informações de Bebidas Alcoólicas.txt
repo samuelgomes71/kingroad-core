@@ -1,0 +1,182 @@
+// Sistema Global de Informações de Bebidas Alcoólicas
+// app/src/main/kotlin/com/kingroad/poi/alcohol/global
+
+class GlobalAlcoholSalesManager(
+    private val poiDatabase: POIDatabase,
+    private val regulationService: RegulationService,
+    private val culturalService: CulturalService
+) {
+    data class CountryRegulations(
+        val country: String,
+        val minimumAge: Int,
+        val saleLocations: Set<VenueType>,
+        val timeRestrictions: TimeRestrictions,
+        val specialRules: List<SpecialRule>,
+        val regionalVariations: Map<String, RegionalVariation>?
+    )
+
+    data class RegionalVariation(
+        val region: String,        // Estado/Província/Departamento
+        val restrictions: Set<RegionalRestriction>,
+        val allowedVenues: Set<VenueType>,
+        val specialPermits: List<String>
+    )
+
+    enum class VenueType {
+        // Europa
+        CAFE,                   // Cafés (França, Itália)
+        TABAC,                  // Tabacarias (França)
+        SUPERMARCHE,           // Supermercados
+        CAVE_A_VIN,            // Loja de vinhos
+        BODEGA,                // Espanha
+        OFF_LICENSE,           // Reino Unido/Irlanda
+        
+        // América do Norte
+        LIQUOR_STORE,          // EUA/Canadá
+        STATE_STORE,           // EUA (estados controlados)
+        BEER_STORE,            // Canadá (Ontário)
+        LCBO,                  // Canadá (Ontário)
+        SAQ,                   // Canadá (Quebec)
+        
+        // Locais Comuns
+        TRUCK_STOP,
+        GAS_STATION,
+        CONVENIENCE_STORE,
+        SUPERMARKET,
+        RESTAURANT,
+        BAR
+    }
+
+    data class TimeRestrictions(
+        val weekdayHours: TimeRange,
+        val weekendHours: TimeRange?,
+        val holidayHours: TimeRange?,
+        val specialDays: Map<String, TimeRange>
+    )
+
+    // Buscar pontos de venda por país
+    suspend fun findVenuesInCountry(
+        country: String,
+        route: Route,
+        preferences: VenuePreferences
+    ): List<AlcoholVenue> {
+        val regulations = regulationService.getCountryRegulations(country)
+        val culturalContext = culturalService.getCountryContext(country)
+        
+        return findVenuesWithRegulations(
+            route = route,
+            regulations = regulations,
+            culturalContext = culturalContext,
+            preferences = preferences
+        )
+    }
+
+    // Implementações específicas por país
+    private suspend fun findFrenchVenues(
+        route: Route,
+        preferences: VenuePreferences
+    ): List<AlcoholVenue> {
+        return when {
+            preferences.winePreferred -> findWineFocusedVenues(route)
+            preferences.beerPreferred -> findBeerFocusedVenues(route)
+            else -> findGeneralVenues(route)
+        }.filter { venue ->
+            isFrenchVenueValid(venue, preferences)
+        }
+    }
+
+    private suspend fun findSpanishVenues(
+        route: Route,
+        preferences: VenuePreferences
+    ): List<AlcoholVenue> {
+        // Implementar lógica específica para Espanha
+        // Considerar bodegas, supermercados, etc.
+    }
+
+    private suspend fun findItalianVenues(
+        route: Route,
+        preferences: VenuePreferences
+    ): List<AlcoholVenue> {
+        // Implementar lógica específica para Itália
+        // Considerar enoteche, supermercados, etc.
+    }
+
+    private suspend fun findGermanVenues(
+        route: Route,
+        preferences: VenuePreferences
+    ): List<AlcoholVenue> {
+        // Implementar lógica específica para Alemanha
+        // Considerar Getränkemarkt, supermercados, etc.
+    }
+
+    private suspend fun findBritishVenues(
+        route: Route,
+        preferences: VenuePreferences
+    ): List<AlcoholVenue> {
+        // Implementar lógica específica para Reino Unido
+        // Considerar off-licenses, supermercados, etc.
+    }
+
+    // Validações específicas por país
+    private fun isFrenchVenueValid(
+        venue: AlcoholVenue,
+        preferences: VenuePreferences
+    ): Boolean {
+        return when (venue.type) {
+            VenueType.TABAC -> validateTabac(venue)
+            VenueType.CAVE_A_VIN -> validateCaveAVin(venue)
+            VenueType.SUPERMARCHE -> validateSupermarche(venue)
+            else -> validateGeneralVenue(venue)
+        }
+    }
+
+    // Informações culturais
+    private fun getVenueCulturalInfo(
+        venue: AlcoholVenue,
+        country: String
+    ): CulturalInfo {
+        return when (country) {
+            "FR" -> FrenchCulturalInfo(
+                wineRegion = getWineRegion(venue.location),
+                localSpecialties = getLocalSpecialties(venue.location),
+                servingCustoms = getFrenchServingCustoms()
+            )
+            "ES" -> SpanishCulturalInfo(
+                bodegaType = getBodegaType(venue),
+                tapasAvailable = hasTapas(venue),
+                regionalStyle = getSpanishRegionalStyle(venue.location)
+            )
+            "IT" -> ItalianCulturalInfo(
+                wineRegion = getItalianWineRegion(venue.location),
+                aperitivoAvailable = hasAperitivo(venue),
+                regionalSpecialties = getItalianSpecialties(venue.location)
+            )
+            else -> GeneralCulturalInfo()
+        }
+    }
+
+    companion object {
+        private val EUROPEAN_COUNTRIES = setOf(
+            "FR", "ES", "IT", "DE", "GB", "PT", "BE", "NL", "CH", "AT"
+        )
+        private val NORTH_AMERICAN_COUNTRIES = setOf(
+            "US", "CA"
+        )
+    }
+}
+
+data class CulturalInfo(
+    val countrySpecific: Map<String, Any>,
+    val recommendations: List<String>,
+    val customaryHours: TimeRange?,
+    val localCustoms: List<String>
+)
+
+data class VenuePreferences(
+    val types: Set<VenueType>,
+    val maxDistance: Double,
+    val winePreferred: Boolean = false,
+    val beerPreferred: Boolean = false,
+    val requireParking: Boolean = true,
+    val minimumRating: Double = 0.0
+)

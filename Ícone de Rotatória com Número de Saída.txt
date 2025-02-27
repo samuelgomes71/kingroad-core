@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200">
+    <!-- Background -->
+    <rect width="400" height="200" fill="#1E1E1E"/>
+    
+    <!-- Exemplo de várias rotatórias com diferentes números -->
+    
+    <!-- Rotatória com 3ª saída -->
+    <g transform="translate(50, 50)">
+        <!-- Círculo externo -->
+        <circle cx="50" cy="50" r="40" fill="none" stroke="#FFFFFF" stroke-width="4"/>
+        
+        <!-- Número no centro -->
+        <text x="50" y="65" 
+            fill="#FFFFFF" 
+            font-family="Arial" 
+            font-size="36" 
+            font-weight="bold" 
+            text-anchor="middle">3</text>
+        
+        <!-- Seta de entrada -->
+        <path d="M 50,90 L 50,120" stroke="#FFFFFF" stroke-width="4"/>
+        
+        <!-- Seta de saída (terceira saída - direita) -->
+        <path d="M 90,50 L 120,50" stroke="#00FF00" stroke-width="4"/>
+        
+        <!-- Texto explicativo -->
+        <text x="50" y="150" 
+            fill="#FFFFFF" 
+            font-family="Arial" 
+            font-size="12" 
+            text-anchor="middle">3ª Saída</text>
+    </g>
+
+    <!-- Rotatória com 2ª saída -->
+    <g transform="translate(200, 50)">
+        <!-- Círculo externo -->
+        <circle cx="50" cy="50" r="40" fill="none" stroke="#FFFFFF" stroke-width="4"/>
+        
+        <!-- Número no centro -->
+        <text x="50" y="65" 
+            fill="#FFFFFF" 
+            font-family="Arial" 
+            font-size="36" 
+            font-weight="bold" 
+            text-anchor="middle">2</text>
+        
+        <!-- Seta de entrada -->
+        <path d="M 50,90 L 50,120" stroke="#FFFFFF" stroke-width="4"/>
+        
+        <!-- Seta de saída (segunda saída - frente) -->
+        <path d="M 50,10 L 50,-20" stroke="#00FF00" stroke-width="4" transform="translate(0, 70)"/>
+        
+        <!-- Texto explicativo -->
+        <text x="50" y="150" 
+            fill="#FFFFFF" 
+            font-family="Arial" 
+            font-size="12" 
+            text-anchor="middle">2ª Saída</text>
+    </g>
+
+    <!-- Rotatória com 1ª saída -->
+    <g transform="translate(350, 50)">
+        <!-- Círculo externo -->
+        <circle cx="50" cy="50" r="40" fill="none" stroke="#FFFFFF" stroke-width="4"/>
+        
+        <!-- Número no centro -->
+        <text x="50" y="65" 
+            fill="#FFFFFF" 
+            font-family="Arial" 
+            font-size="36" 
+            font-weight="bold" 
+            text-anchor="middle">1</text>
+        
+        <!-- Seta de entrada -->
+        <path d="M 50,90 L 50,120" stroke="#FFFFFF" stroke-width="4"/>
+        
+        <!-- Seta de saída (primeira saída - esquerda) -->
+        <path d="M 10,50 L -20,50" stroke="#00FF00" stroke-width="4" transform="translate(70, 0)"/>
+        
+        <!-- Texto explicativo -->
+        <text x="50" y="150" 
+            fill="#FFFFFF" 
+            font-family="Arial" 
+            font-size="12" 
+            text-anchor="middle">1ª Saída</text>
+    </g>
+</svg>

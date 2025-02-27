@@ -1,0 +1,219 @@
+// Sistema de Zonas de Exclusão
+// app/src/main/kotlin/com/kingroad/security/exclusion
+
+class ExclusionZoneManager(
+    private val routeService: RouteService,
+    private val zoneService: ZoneService,
+    private val alertService: AlertService,
+    private val securityService: SecurityService
+) {
+    data class ExclusionZone(
+        val id: String,
+        val geometry: ZoneGeometry,
+        val riskLevel: RiskLevel,
+        val description: String,
+        val safetyProtocols: List<SafetyProtocol>,
+        val accessPoints: List<AccessPoint>,
+        val verifiedBy: List<String>,
+        val lastUpdated: Long = System.currentTimeMillis()
+    )
+
+    sealed class ZoneGeometry {
+        data class Circle(
+            val center: Location,
+            val radiusMeters: Double
+        ) : ZoneGeometry()
+
+        data class Polygon(
+            val points: List<Location>
+        ) : ZoneGeometry()
+    }
+
+    data class AccessPoint(
+        val location: Location,
+        val description: String,
+        val riskLevel: RiskLevel,
+        val safetyInstructions: List<String>
+    )
+
+    enum class RiskLevel {
+        EXTREME,    // Áreas com risco de vida
+        HIGH,       // Áreas muito perigosas
+        MODERATE,   // Áreas com risco significativo
+        LOW        // Áreas com algum risco
+    }
+
+    // Criar nova zona de exclusão
+    suspend fun createExclusionZone(
+        geometry: ZoneGeometry,
+        details: ZoneDetails
+    ): ExclusionZone {
+        val zone = ExclusionZone(
+            id = generateId(),
+            geometry = geometry,
+            riskLevel = details.riskLevel,
+            description = details.description,
+            safetyProtocols = createSafetyProtocols(details.riskLevel),
+            accessPoints = identifyAccessPoints(geometry),
+            verifiedBy = listOf(getCurrentUserId())
+        )
+        
+        zoneService.saveZone(zone)
+        updateRoutingRules(zone)
+        
+        return zone
+    }
+
+    // Verificar se rota atravessa zona de exclusão
+    suspend fun checkRouteForExclusionZones(
+        route: Route,
+        destination: Location
+    ): RouteCheck {
+        val intersectingZones = findIntersectingZones(route)
+        
+        return when {
+            intersectingZones.isEmpty() -> {
+                RouteCheck(isValid = true)
+            }
+            isDestinationInZone(destination, intersectingZones) -> {
+                createDestinationWarning(intersectingZones, destination)
+            }
+            else -> {
+                createAlternativeRoute(route, intersectingZones)
+            }
+        }
+    }
+
+    // Criar rota alternativa evitando zonas
+    private suspend fun createAlternativeRoute(
+        originalRoute: Route,
+        excludedZones: List<ExclusionZone>
+    ): RouteCheck {
+        val avoidanceAreas = excludedZones.map { it.geometry }
+        
+        val alternativeRoute = routeService.calculateRoute(
+            start = originalRoute.start,
+            end = originalRoute.end,
+            avoidAreas = avoidanceAreas,
+            preferences = RoutePreferences(
+                prioritizeSafety = true,
+                avoidRiskAreas = true
+            )
+        )
+        
+        return RouteCheck(
+            isValid = false,
+            alternativeRoute = alternativeRoute,
+            warnings = createWarnings(excludedZones)
+        )
+    }
+
+    // Criar aviso para destino em zona de risco
+    private suspend fun createDestinationWarning(
+        zones: List<ExclusionZone>,
+        destination: Location
+    ): RouteCheck {
+        val highestRiskZone = zones.maxByOrNull { it.riskLevel.ordinal }!!
+        
+        return RouteCheck(
+            isValid = true,
+            requiresConfirmation = true,
+            warnings = listOf(
+                Warning(
+                    type = WarningType.DESTINATION_IN_RISK_ZONE,
+                    message = "Seu destino está em uma área de alto risco",
+                    protocols = highestRiskZone.safetyProtocols,
+                    instructions = createSafetyInstructions(highestRiskZone)
+                )
+            )
+        )
+    }
+
+    // Criar instruções de segurança
+    private fun createSafetyInstructions(zone: ExclusionZone): List<String> {
+        return buildList {
+            add("Mantenha a calma e não faça movimentos bruscos")
+            add("Acenda a luz interna do veículo")
+            add("Baixe os vidros do veículo")
+            add("Comunique-se claramente se abordado")
+            add("Não tente fugir ou fazer retorno")
+            
+            // Instruções específicas por tipo de veículo
+            when (getCurrentVehicleType()) {
+                VehicleType.TRUCK -> {
+                    add("Mantenha o motor ligado")
+                    add("Tenha documentos da carga em mãos")
+                }
+                VehicleType.CAR -> {
+                    add("Mantenha as mãos visíveis no volante")
+                }
+                else -> {
+                    add("Siga as orientações gerais de segurança")
+                }
+            }
+        }
+    }
+
+    // Identificar pontos de acesso
+    private suspend fun identifyAccessPoints(
+        geometry: ZoneGeometry
+    ): List<AccessPoint> {
+        return when (geometry) {
+            is ZoneGeometry.Circle -> {
+                findCircleAccessPoints(geometry)
+            }
+            is ZoneGeometry.Polygon -> {
+                findPolygonAccessPoints(geometry)
+            }
+        }
+    }
+
+    private suspend fun findCircleAccessPoints(
+        circle: ZoneGeometry.Circle
+    ): List<AccessPoint> {
+        return routeService.findMajorRoads(circle.center, circle.radiusMeters)
+            .map { road ->
+                val intersection = calculateIntersection(circle, road)
+                AccessPoint(
+                    location = intersection,
+                    description = "Acesso via ${road.name}",
+                    riskLevel = RiskLevel.HIGH,
+                    safetyInstructions = createAccessPointInstructions(road)
+                )
+            }
+    }
+
+    companion object {
+        const val MIN_ZONE_RADIUS = 100.0 // metros
+        const val MIN_VERIFICATION_COUNT = 3
+        const val SAFETY_MARGIN = 50.0 // metros
+    }
+}
+
+// Classes de suporte
+data class RouteCheck(
+    val isValid: Boolean,
+    val requiresConfirmation: Boolean = false,
+    val alternativeRoute: Route? = null,
+    val warnings: List<Warning> = emptyList()
+)
+
+data class Warning(
+    val type: WarningType,
+    val message: String,
+    val protocols: List<SafetyProtocol>,
+    val instructions: List<String>
+)
+
+enum class WarningType {
+    ZONE_INTERSECTION,
+    DESTINATION_IN_RISK_ZONE,
+    REQUIRES_SPECIAL_ACCESS,
+    HIGH_RISK_AREA
+}
+
+data class SafetyProtocol(
+    val action: String,
+    val priority: Int,
+    val details: String
+)

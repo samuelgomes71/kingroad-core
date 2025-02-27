@@ -1,0 +1,227 @@
+// Sistema de Localização de ATMs para Caminhoneiros
+// app/src/main/kotlin/com/kingroad/poi/atm
+
+class TruckATMManager(
+    private val atmDatabase: ATMDatabase,
+    private val bankingService: BankingService,
+    private val locationService: LocationService
+) {
+    data class TruckAccessibleATM(
+        val id: String,
+        val location: Location,
+        val banks: Set<Bank>,
+        val networks: Set<ATMNetwork>,
+        val accessibility: ATMAccessibility,
+        val operationalStatus: ATMStatus,
+        val fees: ATMFees,
+        val security: SecurityFeatures,
+        val lastVerified: Long
+    )
+
+    data class ATMAccessibility(
+        val truckParking: Boolean,
+        val parkingDistance: Int,     // metros até o ATM
+        val is24Hours: Boolean,
+        val hasLighting: Boolean,
+        val isIndoor: Boolean,        // dentro de estabelecimento
+        val businessHours: OpeningHours?,
+        val truckAccessNotes: String?
+    )
+
+    data class ATMStatus(
+        val isOperational: Boolean,
+        val hasCash: Boolean,
+        val lastUpdated: Long,
+        val issues: List<String>?,
+        val expectedResolution: Long?
+    )
+
+    data class ATMFees(
+        val hasWithdrawalFee: Boolean,
+        val domesticFee: Double?,
+        val internationalFee: Double?,
+        val partnerBanks: Set<Bank>   // bancos sem taxa
+    )
+
+    data class SecurityFeatures(
+        val hasCamera: Boolean,
+        val hasGuard: Boolean,
+        val isWellLit: Boolean,
+        val isMonitored: Boolean,
+        val safetyRating: Int         // 1-5
+    )
+
+    // Encontrar ATMs ao longo da rota
+    suspend fun findATMsAlongRoute(
+        route: Route,
+        preferences: ATMPreferences
+    ): List<TruckAccessibleATM> {
+        val allATMs = atmDatabase.findATMsNearRoute(
+            route = route,
+            maxDistance = preferences.maxDistance
+        )
+
+        return allATMs
+            .filter { atm -> 
+                isTruckAccessible(atm) && 
+                meetsPreferences(atm, preferences)
+            }
+            .sortedBy { atm ->
+                calculateConvenienceScore(atm, route)
+            }
+    }
+
+    // Verificar acessibilidade para caminhões
+    private fun isTruckAccessible(atm: TruckAccessibleATM): Boolean {
+        return atm.accessibility.truckParking &&
+               atm.accessibility.parkingDistance <= MAX_WALKING_DISTANCE &&
+               (atm.accessibility.is24Hours || 
+                atm.accessibility.businessHours?.isCurrentlyOpen() == true)
+    }
+
+    // Encontrar próximo ATM em caso de emergência
+    suspend fun findEmergencyATM(
+        location: Location,
+        maxDistance: Double = EMERGENCY_SEARCH_RADIUS
+    ): TruckAccessibleATM? {
+        return atmDatabase.findNearestATMs(location, maxDistance)
+            .filter { atm -> 
+                atm.operationalStatus.isOperational &&
+                atm.operationalStatus.hasCache &&
+                isTruckAccessible(atm)
+            }
+            .minByOrNull { atm ->
+                calculateEmergencyScore(atm, location)
+            }
+    }
+
+    // Verificar status do ATM em tempo real
+    suspend fun checkATMStatus(atmId: String): ATMStatus {
+        val atm = atmDatabase.getATM(atmId)
+        val realtimeStatus = bankingService.checkATMStatus(atmId)
+        
+        return ATMStatus(
+            isOperational = realtimeStatus.isOperational,
+            hasCache = realtimeStatus.hasCache,
+            lastUpdated = System.currentTimeMillis(),
+            issues = realtimeStatus.issues,
+            expectedResolution = realtimeStatus.expectedResolution
+        )
+    }
+
+    // Calcular melhor momento para saque
+    suspend fun suggestBestWithdrawalTime(
+        atm: TruckAccessibleATM,
+        route: Route
+    ): WithdrawalSuggestion {
+        val trafficPattern = locationService.getTrafficPattern(atm.location)
+        val securityPattern = analyzeSecurityPattern(atm)
+        val businessHours = atm.accessibility.businessHours
+        
+        return calculateOptimalTime(
+            trafficPattern = trafficPattern,
+            securityPattern = securityPattern,
+            businessHours = businessHours,
+            route = route
+        )
+    }
+
+    // Analisar padrão de segurança
+    private suspend fun analyzeSecurityPattern(
+        atm: TruckAccessibleATM
+    ): SecurityPattern {
+        return SecurityPattern(
+            bestHours = determineBestHours(atm),
+            riskHours = determineRiskHours(atm),
+            securityPresence = atm.security.hasGuard,
+            lightingConditions = analyzeLighting(atm)
+        )
+    }
+
+    // Gerar avisos importantes
+    private fun generateWarnings(
+        atm: TruckAccessibleATM
+    ): List<ATMWarning> {
+        val warnings = mutableListOf<ATMWarning>()
+
+        // Verificar horário de funcionamento
+        if (!atm.accessibility.is24Hours) {
+            warnings.add(ATMWarning(
+                type = WarningType.LIMITED_HOURS,
+                message = "ATM disponível apenas durante horário comercial"
+            ))
+        }
+
+        // Verificar taxas
+        if (atm.fees.hasWithdrawalFee) {
+            warnings.add(ATMWarning(
+                type = WarningType.FEES_APPLY,
+                message = "Taxas de saque aplicáveis"
+            ))
+        }
+
+        // Verificar iluminação
+        if (!atm.security.isWellLit) {
+            warnings.add(ATMWarning(
+                type = WarningType.LIGHTING,
+                message = "Iluminação limitada no local"
+            ))
+        }
+
+        return warnings
+    }
+
+    companion object {
+        const val MAX_WALKING_DISTANCE = 100  // metros
+        const val EMERGENCY_SEARCH_RADIUS = 5000.0  // 5km
+        const val MIN_SECURITY_RATING = 3  // mínimo aceitável
+    }
+}
+
+// Classes de suporte
+enum class ATMNetwork {
+    VISA,
+    MASTERCARD,
+    CIRRUS,
+    PLUS,
+    INTERAC,    // Canadá
+    LINK,       // Reino Unido
+    EC,         // Alemanha
+    CB,         // França
+    BANCOMAT,   // Itália
+    SERVIRED    // Espanha
+}
+
+data class WithdrawalSuggestion(
+    val bestTime: TimeRange,
+    val alternativeTimes: List<TimeRange>,
+    val reasoning: String,
+    val securityNotes: String?
+)
+
+data class SecurityPattern(
+    val bestHours: List<TimeRange>,
+    val riskHours: List<TimeRange>,
+    val securityPresence: Boolean,
+    val lightingConditions: LightingConditions
+)
+
+data class ATMWarning(
+    val type: WarningType,
+    val message: String,
+    val severity: Severity = Severity.MEDIUM
+)
+
+enum class WarningType {
+    LIMITED_HOURS,
+    FEES_APPLY,
+    LIGHTING,
+    SECURITY,
+    ACCESS
+}
+
+enum class Severity {
+    LOW,
+    MEDIUM,
+    HIGH
+}

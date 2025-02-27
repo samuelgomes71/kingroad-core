@@ -1,0 +1,189 @@
+// Sistema de Processamento de Destinos
+// app/src/main/kotlin/com/kingroad/navigation/destination
+
+class DestinationProcessor(
+    private val geocodingService: GeocodingService,
+    private val historyManager: NavigationHistoryManager,
+    private val favoriteManager: FavoriteManager,
+    private val routeCalculator: RouteCalculator
+) {
+    data class Destination(
+        val location: Location,
+        val address: Address,
+        val source: InputSource,
+        val metadata: Map<String, Any>? = null
+    )
+
+    data class Address(
+        val street: String? = null,
+        val number: String? = null,
+        val city: String,
+        val state: String,
+        val country: String,
+        val postalCode: String? = null,
+        val formattedAddress: String
+    )
+
+    enum class InputSource {
+        ADDRESS,       // Endereço normal
+        POSTAL_CODE,   // CEP/Código postal
+        COORDINATES,   // Coordenadas
+        HISTORY,       // Histórico
+        FAVORITES,     // Favoritos
+        POI           // Ponto de interesse
+    }
+
+    // Processar entrada do usuário
+    suspend fun processInput(input: String): List<Destination> {
+        return when {
+            isPostalCode(input) -> processPostalCode(input)
+            isCoordinates(input) -> processCoordinates(input)
+            input.startsWith("fav:") -> processFavorite(input)
+            input.startsWith("hist:") -> processHistory(input)
+            else -> processAddress(input)
+        }
+    }
+
+    // Processar endereço normal
+    private suspend fun processAddress(input: String): List<Destination> {
+        return geocodingService.geocode(input).map { result ->
+            Destination(
+                location = result.location,
+                address = result.address,
+                source = InputSource.ADDRESS
+            )
+        }
+    }
+
+    // Processar código postal
+    private suspend fun processPostalCode(code: String): List<Destination> {
+        return geocodingService.geocodePostalCode(code).map { result ->
+            Destination(
+                location = result.location,
+                address = result.address,
+                source = InputSource.POSTAL_CODE
+            )
+        }
+    }
+
+    // Processar coordenadas
+    private suspend fun processCoordinates(input: String): List<Destination> {
+        val coordinates = parseCoordinates(input)
+        val location = Location(coordinates.latitude, coordinates.longitude)
+        val address = geocodingService.reverseGeocode(location)
+        
+        return listOf(
+            Destination(
+                location = location,
+                address = address,
+                source = InputSource.COORDINATES
+            )
+        )
+    }
+
+    // Processar favorito
+    private suspend fun processFavorite(input: String): List<Destination> {
+        val favoriteId = input.substringAfter("fav:")
+        val favorite = favoriteManager.getFavorite(favoriteId)
+        
+        return listOf(
+            Destination(
+                location = favorite.location,
+                address = favorite.address,
+                source = InputSource.FAVORITES,
+                metadata = mapOf("favoriteId" to favoriteId)
+            )
+        )
+    }
+
+    // Processar histórico
+    private suspend fun processHistory(input: String): List<Destination> {
+        val historyId = input.substringAfter("hist:")
+        val historyItem = historyManager.getHistoryItem(historyId)
+        
+        return listOf(
+            Destination(
+                location = historyItem.location,
+                address = historyItem.address,
+                source = InputSource.HISTORY,
+                metadata = mapOf("historyId" to historyId)
+            )
+        )
+    }
+
+    // Calcular rota entre dois pontos
+    suspend fun calculateRoute(
+        origin: Destination,
+        destination: Destination
+    ): RouteResult {
+        val route = routeCalculator.calculateRoute(
+            origin = origin.location,
+            destination = destination.location
+        )
+
+        // Salvar no histórico
+        historyManager.saveRoute(
+            origin = origin,
+            destination = destination,
+            route = route
+        )
+
+        return route
+    }
+
+    // Utilitários de validação
+    private fun isPostalCode(input: String): Boolean {
+        // Validar diferentes formatos de código postal
+        return input.matches(Regex("""^\d{5}(-\d{3})?$""")) || // Brasil
+               input.matches(Regex("""^[A-Z]\d[A-Z] \d[A-Z]\d$""")) || // Canadá
+               input.matches(Regex("""^\d{5}$""")) // EUA
+    }
+
+    private fun isCoordinates(input: String): Boolean {
+        return input.matches(Regex("""^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)$""")) ||
+               input.matches(Regex("""^\d{1,3}°\d{1,2}'\d{1,2}(\.\d+)?\"[NS]\s+\d{1,3}°\d{1,2}'\d{1,2}(\.\d+)?\"[EW]$"""))
+    }
+
+    private fun parseCoordinates(input: String): Coordinates {
+        // Implementar parsing de diferentes formatos de coordenadas
+        return when {
+            input.contains(",") -> parseDecimalCoordinates(input)
+            input.contains("°") -> parseDMSCoordinates(input)
+            else -> throw IllegalArgumentException("Formato de coordenadas não suportado")
+        }
+    }
+
+    companion object {
+        private val POSTAL_CODE_PATTERNS = mapOf(
+            "BR" to Regex("""^\d{5}-?\d{3}$"""),
+            "US" to Regex("""^\d{5}(-\d{4})?$"""),
+            "CA" to Regex("""^[A-Z]\d[A-Z] \d[A-Z]\d$""")
+        )
+    }
+}
+
+data class Coordinates(
+    val latitude: Double,
+    val longitude: Double
+)
+
+data class RouteResult(
+    val distance: Double,
+    val duration: Duration,
+    val tolls: List<Toll>,
+    val suggestedStops: List<SuggestedStop>,
+    val restrictions: List<RouteRestriction>
+)
+
+data class SuggestedStop(
+    val location: Location,
+    val reason: StopReason,
+    val facilities: List<String>
+)
+
+enum class StopReason {
+    REST_REQUIRED,
+    MEAL_TIME,
+    FUEL_NEEDED,
+    STRATEGIC_POINT
+}

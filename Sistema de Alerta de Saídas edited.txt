@@ -1,0 +1,157 @@
+// Sistema de Alertas de Saídas
+// app/src/main/kotlin/com/kingroad/alerts/exits
+
+class ExitAlertManager(
+    private val navigationService: NavigationService,
+    private val locationService: LocationService,
+    private val displayManager: DisplayManager
+) {
+    data class Exit(
+        val id: String,
+        val location: Location,
+        val number: String,
+        val isTarget: Boolean,
+        val distance: Double,
+        val type: ExitType
+    )
+
+    enum class ExitType {
+        HIGHWAY,        // Saída de autoestrada
+        INTERCHANGE,    // Entroncamento
+        SERVICE_AREA,   // Área de serviço
+        LOCAL_EXIT     // Saída local
+    }
+
+    // Distâncias de alerta baseadas na velocidade
+    private fun getAlertDistance(speedKmh: Float): Double {
+        return when {
+            speedKmh >= 80.0f -> 900.0   // 900m para ≥ 80km/h
+            speedKmh >= 60.0f -> 500.0   // 500m para ≥ 60km/h
+            else -> 200.0                 // 200m para < 60km/h
+        }
+    }
+
+    // Monitorar saídas
+    suspend fun startExitMonitoring() {
+        locationService.startLocationUpdates { location ->
+            val speed = location.getSpeedKmh()
+            val alertDistance = getAlertDistance(speed)
+            
+            checkNearbyExits(location, alertDistance, speed)
+        }
+    }
+
+    // Verificar saídas próximas
+    private suspend fun checkNearbyExits(
+        location: Location,
+        alertDistance: Double,
+        speedKmh: Float
+    ) {
+        val targetExit = navigationService.getTargetExit()
+        val nearbyExits = navigationService.getNearbyExits(
+            location = location,
+            radius = alertDistance
+        )
+
+        // Filtrar saídas antes da saída alvo
+        val exitsToIgnore = nearbyExits.filter { exit ->
+            exit.location.isBefore(targetExit.location) &&
+            calculateDistance(location, exit.location) <= alertDistance
+        }
+
+        // Mostrar alertas
+        exitsToIgnore.forEach { exit ->
+            showExitWarning(exit, speedKmh)
+        }
+
+        // Mostrar alerta da saída correta se estiver próxima
+        if (calculateDistance(location, targetExit.location) <= alertDistance) {
+            showTargetExitAlert(targetExit, speedKmh)
+        }
+    }
+
+    // Mostrar aviso de saída a ignorar
+    private suspend fun showExitWarning(
+        exit: Exit,
+        speedKmh: Float
+    ) {
+        val distance = calculateDistance(
+            locationService.getCurrentLocation(),
+            exit.location
+        )
+
+        val warning = ExitWarning(
+            type = WarningType.IGNORE,
+            distance = formatDistance(distance),
+            exitNumber = exit.number,
+            size = getWarningSize(speedKmh)
+        )
+
+        displayManager.showExitWarning(warning)
+    }
+
+    // Mostrar alerta da saída correta
+    private suspend fun showTargetExitAlert(
+        exit: Exit,
+        speedKmh: Float
+    ) {
+        val distance = calculateDistance(
+            locationService.getCurrentLocation(),
+            exit.location
+        )
+
+        val alert = ExitWarning(
+            type = WarningType.TARGET,
+            distance = formatDistance(distance),
+            exitNumber = exit.number,
+            size = getWarningSize(speedKmh)
+        )
+
+        displayManager.showExitWarning(alert)
+    }
+
+    // Determinar tamanho do aviso baseado na velocidade
+    private fun getWarningSize(speedKmh: Float): WarningSize {
+        return when {
+            speedKmh >= 80.0f -> WarningSize.LARGE
+            speedKmh >= 60.0f -> WarningSize.MEDIUM
+            else -> WarningSize.SMALL
+        }
+    }
+
+    // Formatar distância
+    private fun formatDistance(meters: Double): String {
+        return when {
+            meters >= 1000 -> "%.1f km".format(meters / 1000)
+            else -> "${meters.toInt()} m"
+        }
+    }
+}
+
+data class ExitWarning(
+    val type: WarningType,
+    val distance: String,
+    val exitNumber: String,
+    val size: WarningSize
+)
+
+enum class WarningType {
+    IGNORE,  // Saída a ignorar
+    TARGET   // Saída correta
+}
+
+enum class WarningSize {
+    LARGE,   // Para ≥ 80km/h
+    MEDIUM,  // Para 60-80km/h
+    SMALL    // Para < 60km/h
+}
+
+// Extensões úteis
+fun Location.isBefore(other: Location): Boolean {
+    // Implementar lógica para determinar se uma localização está antes de outra na rota
+    return true
+}
+
+fun Location.getSpeedKmh(): Float {
+    return (this.speed * 3.6f) // Converter m/s para km/h
+}

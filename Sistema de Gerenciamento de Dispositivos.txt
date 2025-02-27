@@ -1,0 +1,186 @@
+// DeviceManager.kt
+class DeviceManager(
+    private val deviceService: DeviceService,
+    private val locationService: LocationService,
+    private val licenseService: LicenseService,
+    private val authService: AuthenticationService
+) {
+    data class DeviceInfo(
+        val id: String,
+        val type: DeviceType,
+        val name: String,
+        val lastActive: Long,
+        val isActive: Boolean = false,
+        val location: Location? = null
+    )
+
+    enum class DeviceType {
+        ANDROID,
+        IOS,
+        WINDOWS
+    }
+
+    data class DeviceSession(
+        val deviceId: String,
+        val startTime: Long,
+        val location: Location,
+        val isValid: Boolean = true
+    )
+
+    private val activeSessions = mutableMapOf<String, DeviceSession>()
+    private val MAX_MOBILE_DEVICES = 3
+    private val LOCATION_THRESHOLD = 100.0 // metros
+    private val WARNING_TIMEOUT = 15 * 60 * 1000L // 15 minutos em milissegundos
+
+    // Registrar novo dispositivo
+    suspend fun registerDevice(deviceInfo: DeviceInfo): Result<Boolean> {
+        return try {
+            val currentDevices = deviceService.getRegisteredDevices()
+            
+            // Verificar limite de dispositivos móveis
+            if (deviceInfo.type != DeviceType.WINDOWS) {
+                val mobileCount = currentDevices.count { 
+                    it.type != DeviceType.WINDOWS 
+                }
+                if (mobileCount >= MAX_MOBILE_DEVICES) {
+                    return Result.failure(
+                        Exception("Limite máximo de dispositivos móveis atingido")
+                    )
+                }
+            }
+
+            deviceService.registerDevice(deviceInfo)
+            Result.success(true)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Iniciar sessão em dispositivo
+    suspend fun startDeviceSession(deviceId: String, location: Location): Result<DeviceSession> {
+        return try {
+            val device = deviceService.getDevice(deviceId) ?: throw Exception("Dispositivo não encontrado")
+            
+            // Verificar outros dispositivos ativos
+            val activeDevices = getActiveDevices()
+            
+            if (device.type != DeviceType.WINDOWS) {
+                // Verificar se há outros dispositivos móveis ativos
+                val mobileConflict = checkLocationConflict(activeDevices, location)
+                
+                if (mobileConflict) {
+                    // Iniciar sessão com aviso de desconexão
+                    startDisconnectWarning(deviceId)
+                }
+            }
+
+            val session = DeviceSession(
+                deviceId = deviceId,
+                startTime = System.currentTimeMillis(),
+                location = location
+            )
+            
+            activeSessions[deviceId] = session
+            deviceService.updateDeviceStatus(deviceId, true)
+            
+            Result.success(session)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Verificar conflito de localização
+    private suspend fun checkLocationConflict(
+        activeDevices: List<DeviceInfo>,
+        newLocation: Location
+    ): Boolean {
+        return activeDevices.any { device ->
+            device.location?.let { location ->
+                val distance = calculateDistance(location, newLocation)
+                distance > LOCATION_THRESHOLD
+            } ?: false
+        }
+    }
+
+    // Iniciar aviso de desconexão
+    private suspend fun startDisconnectWarning(deviceId: String) {
+        coroutineScope {
+            launch {
+                delay(WARNING_TIMEOUT)
+                if (activeSessions.containsKey(deviceId)) {
+                    disconnectDevice(deviceId)
+                }
+            }
+        }
+    }
+
+    // Desconectar dispositivo
+    private suspend fun disconnectDevice(deviceId: String) {
+        activeSessions.remove(deviceId)
+        deviceService.updateDeviceStatus(deviceId, false)
+        
+        // Notificar usuário
+        deviceService.sendNotification(
+            deviceId,
+            "Sessão encerrada",
+            "Este dispositivo foi desconectado devido ao uso em localização diferente"
+        )
+    }
+
+    // Monitorar localizações
+    suspend fun startLocationMonitoring() {
+        coroutineScope {
+            launch {
+                while (true) {
+                    val activeDevices = getActiveDevices()
+                    checkDeviceLocations(activeDevices)
+                    delay(30000) // Verificar a cada 30 segundos
+                }
+            }
+        }
+    }
+
+    // Verificar localizações dos dispositivos
+    private suspend fun checkDeviceLocations(devices: List<DeviceInfo>) {
+        val locations = devices.mapNotNull { it.location }
+        
+        // Agrupar dispositivos por proximidade
+        val groups = locations.groupBy { location ->
+            locations.filter { other ->
+                calculateDistance(location, other) <= LOCATION_THRESHOLD
+            }
+        }
+
+        // Se houver mais de um grupo, alguns dispositivos estão muito distantes
+        if (groups.size > 1) {
+            // Encontrar o grupo mais recente (último a iniciar)
+            val lastGroup = groups.maxByOrNull { group ->
+                group.key.maxOf { location ->
+                    activeSessions.values
+                        .filter { it.location == location }
+                        .maxOf { it.startTime }
+                }
+            }
+
+            // Desconectar dispositivos do último grupo
+            lastGroup?.key?.forEach { location ->
+                val deviceId = findDeviceByLocation(location)
+                deviceId?.let { startDisconnectWarning(it) }
+            }
+        }
+    }
+
+    // Encontrar dispositivo por localização
+    private fun findDeviceByLocation(location: Location): String? {
+        return activeSessions.entries.find { 
+            it.value.location == location 
+        }?.key
+    }
+
+    companion object {
+        private fun calculateDistance(loc1: Location, loc2: Location): Double {
+            // Implementar cálculo de distância entre duas coordenadas
+            return 0.0
+        }
+    }
+}

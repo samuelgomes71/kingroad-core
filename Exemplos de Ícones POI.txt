@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400">
+    <!-- Background -->
+    <rect width="800" height="400" fill="#1E1E1E"/>
+    
+    <!-- Postos de Combustível -->
+    <g transform="translate(50, 50)">
+        <!-- Shell -->
+        <circle cx="40" cy="40" r="30" fill="#FFD700"/>
+        <path d="M 20,50 Q 40,20 60,50" stroke="#FF0000" stroke-width="6" fill="none"/>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial">Shell</text>
+    </g>
+
+    <g transform="translate(150, 50)">
+        <!-- Petrobras -->
+        <circle cx="40" cy="40" r="30" fill="#009933"/>
+        <text x="40" y="45" fill="white" text-anchor="middle" font-family="Arial" font-size="12">BR</text>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial">Petrobras</text>
+    </g>
+
+    <g transform="translate(250, 50)">
+        <!-- Flying J -->
+        <rect x="10" y="10" width="60" height="60" rx="10" fill="#003366"/>
+        <text x="40" y="45" fill="white" text-anchor="middle" font-family="Arial" font-size="20">FJ</text>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial">Flying J</text>
+    </g>
+
+    <!-- Restaurantes -->
+    <g transform="translate(50, 200)">
+        <!-- McDonald's -->
+        <path d="M 10,40 Q 40,0 70,40" stroke="#FFD700" stroke-width="8" fill="none"/>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial">McDonald's</text>
+    </g>
+
+    <g transform="translate(150, 200)">
+        <!-- Burger King -->
+        <circle cx="40" cy="40" r="30" fill="#FF0000"/>
+        <text x="40" y="45" fill="white" text-anchor="middle" font-family="Arial" font-size="12">BK</text>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial">Burger King</text>
+    </g>
+
+    <g transform="translate(250, 200)">
+        <!-- Tim Hortons -->
+        <circle cx="40" cy="40" r="30" fill="#C8102E"/>
+        <text x="40" y="45" fill="white" text-anchor="middle" font-family="Arial" font-size="12">TH</text>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial">Tim Hortons</text>
+    </g>
+
+    <!-- Truck Stops -->
+    <g transform="translate(400, 50)">
+        <!-- Pilot -->
+        <rect x="10" y="10" width="60" height="60" rx="10" fill="#003399"/>
+        <text x="40" y="45" fill="white" text-anchor="middle" font-family="Arial" font-size="16">PILOT</text>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial">Pilot</text>
+    </g>
+
+    <g transform="translate(500, 50)">
+        <!-- TA -->
+        <rect x="10" y="10" width="60" height="60" rx="10" fill="#990000"/>
+        <text x="40" y="45" fill="white" text-anchor="middle" font-family="Arial" font-size="20">TA</text>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial">TA</text>
+    </g>
+
+    <!-- Lojas -->
+    <g transform="translate(400, 200)">
+        <!-- Dollarama -->
+        <rect x="10" y="10" width="60" height="60" rx="10" fill="#00B300"/>
+        <text x="40" y="45" fill="white" text-anchor="middle" font-family="Arial" font-size="12">$</text>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial">Dollarama</text>
+    </g>
+
+    <!-- Indicador de Tamanho -->
+    <g transform="translate(650, 50)">
+        <text x="0" y="0" fill="white" font-family="Arial" font-size="14">Tamanhos:</text>
+        <circle cx="30" cy="30" r="20" fill="#666666"/>
+        <circle cx="30" cy="80" r="15" fill="#666666"/>
+        <circle cx="30" cy="120" r="10" fill="#666666"/>
+        <text x="60" y="35" fill="white" font-family="Arial" font-size="12">Grande</text>
+        <text x="60" y="85" fill="white" font-family="Arial" font-size="12">Médio</text>
+        <text x="60" y="125" fill="white" font-family="Arial" font-size="12">Pequeno</text>
+    </g>
+</svg>

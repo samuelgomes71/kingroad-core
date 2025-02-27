@@ -1,0 +1,193 @@
+// Sistema de Pontos de Encontro
+// app/src/main/kotlin/com/kingroad/meeting
+
+class MeetingPointManager(
+    private val routeService: RouteService,
+    private val poiManager: POIManager,
+    private val trafficService: TrafficService,
+    private val locationService: LocationService
+) {
+    data class MeetingPoint(
+        val location: Location,
+        val type: MeetingPointType,
+        val facilities: Facilities,
+        val timeEstimates: TimeEstimates,
+        val parking: ParkingInfo
+    )
+    
+    data class TimeEstimates(
+        val driver1ArrivalTime: Long,
+        val driver2ArrivalTime: Long,
+        val waitingTime: Long,
+        val totalOptimizationScore: Double
+    )
+    
+    enum class MeetingPointType {
+        TRUCK_STOP,
+        REST_AREA,
+        FUEL_STATION,
+        RESTAURANT,
+        PARKING_AREA
+    }
+    
+    // Encontrar pontos de encontro ideais
+    suspend fun findOptimalMeetingPoints(
+        driver1: DriverInfo,
+        driver2: DriverInfo,
+        scenario: MeetingScenario
+    ): List<MeetingPoint> {
+        return when (scenario) {
+            MeetingScenario.OPPOSITE_DIRECTIONS -> findBidirectionalPoints(driver1, driver2)
+            MeetingScenario.SAME_DIRECTION -> findUnidirectionalPoints(driver1, driver2)
+            MeetingScenario.DIFFERENT_ROUTES -> findConvergencePoints(driver1, driver2)
+        }
+    }
+    
+    // Análise bidirecional (sentidos opostos)
+    private suspend fun findBidirectionalPoints(
+        driver1: DriverInfo,
+        driver2: DriverInfo
+    ): List<MeetingPoint> {
+        // Obter todos os pontos de acesso bidirecionais na rota
+        val accessPoints = routeService.getBidirectionalAccessPoints(
+            route1 = driver1.route,
+            route2 = driver2.route
+        )
+        
+        return accessPoints.mapNotNull { point ->
+            // Calcular tempos estimados para cada motorista
+            val time1 = calculateArrivalTime(driver1, point)
+            val time2 = calculateArrivalTime(driver2, point)
+            
+            // Verificar adequação do ponto
+            val facilities = poiManager.getFacilities(point.location)
+            if (!isPointSuitable(facilities)) return@mapNotNull null
+            
+            MeetingPoint(
+                location = point.location,
+                type = determinePointType(facilities),
+                facilities = facilities,
+                timeEstimates = TimeEstimates(
+                    driver1ArrivalTime = time1,
+                    driver2ArrivalTime = time2,
+                    waitingTime = calculateWaitingTime(time1, time2),
+                    totalOptimizationScore = calculateOptimizationScore(time1, time2, facilities)
+                ),
+                parking = poiManager.getParkingInfo(point.location)
+            )
+        }.sortedBy { it.timeEstimates.totalOptimizationScore }
+    }
+    
+    // Análise unidirecional (mesmo sentido)
+    private suspend fun findUnidirectionalPoints(
+        driver1: DriverInfo,
+        driver2: DriverInfo
+    ): List<MeetingPoint> {
+        // Encontrar próximas paradas adequadas
+        val stopPoints = routeService.getStopPoints(
+            route = driver1.route,
+            minDistance = calculateMinStopDistance(driver1, driver2)
+        )
+        
+        return stopPoints.mapNotNull { point ->
+            val time1 = calculateArrivalTime(driver1, point)
+            val time2 = calculateArrivalTime(driver2, point)
+            
+            // Verificar disponibilidade de vagas
+            val parking = poiManager.getParkingInfo(point.location)
+            if (!isParkingAvailable(parking)) return@mapNotNull null
+            
+            MeetingPoint(
+                location = point.location,
+                type = determinePointType(point),
+                facilities = poiManager.getFacilities(point.location),
+                timeEstimates = TimeEstimates(
+                    driver1ArrivalTime = time1,
+                    driver2ArrivalTime = time2,
+                    waitingTime = calculateWaitingTime(time1, time2),
+                    totalOptimizationScore = calculateOptimizationScore(time1, time2, point)
+                ),
+                parking = parking
+            )
+        }.sortedBy { it.timeEstimates.waitingTime }
+    }
+    
+    // Análise de convergência (rotas diferentes)
+    private suspend fun findConvergencePoints(
+        driver1: DriverInfo,
+        driver2: DriverInfo
+    ): List<MeetingPoint> {
+        // Encontrar pontos de convergência das rotas
+        val convergencePoints = routeService.findConvergencePoints(
+            route1 = driver1.route,
+            route2 = driver2.route,
+            maxDetour = calculateMaxDetour(driver1, driver2)
+        )
+        
+        return convergencePoints.mapNotNull { point ->
+            val time1 = calculateArrivalTime(driver1, point)
+            val time2 = calculateArrivalTime(driver2, point)
+            
+            // Verificar infraestrutura
+            val facilities = poiManager.getFacilities(point.location)
+            if (!hasAdequateInfrastructure(facilities)) return@mapNotNull null
+            
+            MeetingPoint(
+                location = point.location,
+                type = determinePointType(facilities),
+                facilities = facilities,
+                timeEstimates = TimeEstimates(
+                    driver1ArrivalTime = time1,
+                    driver2ArrivalTime = time2,
+                    waitingTime = calculateWaitingTime(time1, time2),
+                    totalOptimizationScore = calculateConvergenceScore(time1, time2, point)
+                ),
+                parking = poiManager.getParkingInfo(point.location)
+            )
+        }.sortedBy { it.timeEstimates.totalOptimizationScore }
+    }
+    
+    // Cálculos de tempo e otimização
+    private suspend fun calculateArrivalTime(
+        driver: DriverInfo,
+        point: Location
+    ): Long {
+        val baseTime = routeService.calculateTravelTime(
+            from = driver.currentLocation,
+            to = point
+        )
+        
+        val trafficDelay = trafficService.getEstimatedDelay(
+            route = driver.route,
+            timestamp = System.currentTimeMillis() + baseTime
+        )
+        
+        return System.currentTimeMillis() + baseTime + trafficDelay
+    }
+    
+    private fun calculateOptimizationScore(
+        time1: Long,
+        time2: Long,
+        facilities: Facilities
+    ): Double {
+        val waitingTime = calculateWaitingTime(time1, time2)
+        val facilityScore = calculateFacilityScore(facilities)
+        
+        return waitingTime * 0.6 + facilityScore * 0.4
+    }
+}
+
+// Informações do motorista
+data class DriverInfo(
+    val id: String,
+    val currentLocation: Location,
+    val route: Route,
+    val vehicle: Vehicle,
+    val restRequirements: RestRequirements
+)
+
+enum class MeetingScenario {
+    OPPOSITE_DIRECTIONS,
+    SAME_DIRECTION,
+    DIFFERENT_ROUTES
+}

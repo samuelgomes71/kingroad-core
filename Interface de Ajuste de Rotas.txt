@@ -1,0 +1,93 @@
+import React, { useState } from 'react';
+import { MapPin, Check, X, ZoomIn, ZoomOut } from 'lucide-react';
+
+const RouteAdjustmentInterface = () => {
+  const [isAdjusting, setIsAdjusting] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  
+  return (
+    <div className="h-screen bg-[#121212]">
+      {/* Barra superior */}
+      <div className="bg-[#1E1E1E] p-4 flex justify-between items-center">
+        <div className="text-white text-xl font-bold">Ajustar Rota</div>
+        <div className="flex items-center space-x-2">
+          <button className="p-2 rounded-lg bg-[#252525]">
+            <ZoomIn size={24} className="text-gray-300" />
+          </button>
+          <button className="p-2 rounded-lg bg-[#252525]">
+            <ZoomOut size={24} className="text-gray-300" />
+          </button>
+        </div>
+      </div>
+
+      {/* Área do mapa com rota */}
+      <div className="flex-1 bg-[#252525] relative">
+        {/* Overlay de instruções quando começar a ajustar */}
+        {isAdjusting && (
+          <div className="absolute top-4 left-4 right-4 bg-[#1A4B81] p-4 rounded-lg">
+            <div className="flex items-center space-x-2 text-blue-100">
+              <MapPin size={20} />
+              <span>Arraste a rota para o novo caminho desejado</span>
+            </div>
+          </div>
+        )}
+
+        {/* Controles de ajuste */}
+        <div className="absolute bottom-24 right-4 flex flex-col space-y-2">
+          {/* Zoom atual */}
+          <div className="bg-[#1E1E1E] p-2 rounded-lg text-gray-300 text-center">
+            {Math.round(zoomLevel * 100)}%
+          </div>
+        </div>
+      </div>
+
+      {/* Barra de confirmação de ajuste */}
+      {isAdjusting && (
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-[#1E1E1E]">
+          <div className="flex space-x-4">
+            <button 
+              onClick={() => setIsAdjusting(false)}
+              className="flex-1 bg-[#252525] p-4 rounded-lg text-gray-200 flex items-center justify-center"
+            >
+              <X size={20} className="mr-2" />
+              Cancelar
+            </button>
+            
+            <button className="flex-1 bg-blue-600 p-4 rounded-lg text-white flex items-center justify-center">
+              <Check size={20} className="mr-2" />
+              Confirmar Ajuste
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Botão de iniciar ajuste */}
+      {!isAdjusting && (
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-[#1E1E1E]">
+          <button 
+            onClick={() => setIsAdjusting(true)}
+            className="w-full bg-blue-600 p-4 rounded-lg text-white flex items-center justify-center"
+          >
+            <MapPin size={20} className="mr-2" />
+            Ajustar Rota
+          </button>
+        </div>
+      )}
+
+      {/* Dicas de uso */}
+      <div className="p-4 bg-[#1E1E1E] border-t border-[#303030]">
+        <div className="text-sm text-gray-400">
+          <div className="mb-2 font-medium text-gray-300">Como ajustar a rota:</div>
+          <ul className="space-y-1">
+            <li>• Dê zoom para ver melhor o local desejado</li>
+            <li>• Toque e arraste a rota para o novo caminho</li>
+            <li>• A rota se ajustará automaticamente às vias adequadas</li>
+            <li>• Confirme o ajuste quando estiver satisfeito</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default RouteAdjustmentInterface;

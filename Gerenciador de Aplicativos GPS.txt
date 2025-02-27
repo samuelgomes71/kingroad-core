@@ -1,0 +1,150 @@
+// GPSAppManager.kt
+class GPSAppManager(
+    private val deviceService: DeviceService,
+    private val appService: ApplicationService,
+    private val notificationService: NotificationService
+) {
+    data class GPSApp(
+        val packageName: String,
+        val appName: String,
+        val memoryUsage: Long,
+        val isRunning: Boolean
+    )
+
+    private val knownGPSApps = listOf(
+        "com.google.android.apps.maps",    // Google Maps
+        "com.waze",                        // Waze
+        "com.sygic.aura",                  // Sygic
+        "net.osmand",                      // OsmAnd
+        "com.mapfactor.navigator",         // Navigator
+        "com.here.app.maps"                // HERE WeGo
+    )
+
+    private val MINIMUM_RAM = 8L * 1024 * 1024 * 1024 // 8GB em bytes
+    private val WARNING_DURATION = 180000L // 3 minutos em milissegundos
+
+    // Iniciar monitoramento
+    suspend fun startMonitoring() {
+        val availableRam = deviceService.getAvailableRAM()
+        
+        // Se o dispositivo tem RAM suficiente, não é necessário fechar outros apps
+        if (availableRam >= MINIMUM_RAM) {
+            return
+        }
+
+        coroutineScope {
+            launch {
+                checkRunningGPSApps()
+            }
+        }
+    }
+
+    // Verificar apps GPS em execução
+    private suspend fun checkRunningGPSApps() {
+        val runningApps = appService.getRunningApps()
+        val gpsApps = runningApps.filter { app ->
+            knownGPSApps.contains(app.packageName)
+        }
+
+        if (gpsApps.isNotEmpty()) {
+            // Notificar usuário
+            showWarningNotification(gpsApps)
+            
+            // Iniciar contagem regressiva
+            delay(WARNING_DURATION)
+            
+            // Fechar apps após o tempo
+            closeGPSApps(gpsApps)
+        }
+    }
+
+    // Mostrar notificação de aviso
+    private suspend fun showWarningNotification(apps: List<GPSApp>) {
+        val appNames = apps.joinToString(", ") { it.appName }
+        
+        notificationService.showWarning(
+            title = "Aviso: Outros Apps de GPS Detectados",
+            message = "Os seguintes apps serão fechados em 3 minutos para " +
+                     "evitar conflitos: $appNames",
+            actions = listOf(
+                NotificationAction(
+                    "CLOSE_NOW",
+                    "Fechar Agora"
+                ),
+                NotificationAction(
+                    "DISMISS",
+                    "Entendi"
+                )
+            )
+        )
+    }
+
+    // Fechar apps GPS
+    private suspend fun closeGPSApps(apps: List<GPSApp>) {
+        apps.forEach { app ->
+            try {
+                appService.closeApp(app.packageName)
+                
+                // Log do fechamento
+                logAppClosure(app)
+                
+                // Pequeno delay entre cada fechamento
+                delay(500)
+            } catch (e: Exception) {
+                // Log do erro
+                logClosureError(app, e)
+            }
+        }
+
+        // Notificar conclusão
+        notificationService.showInfo(
+            title = "Apps GPS Fechados",
+            message = "Outros aplicativos GPS foram fechados para melhor desempenho"
+        )
+    }
+
+    // Verificar se app está em uso ativo
+    private suspend fun isAppInActiveUse(app: GPSApp): Boolean {
+        return appService.isAppInForeground(app.packageName) ||
+               appService.hasActiveNavigation(app.packageName)
+    }
+
+    // Monitorar uso de memória
+    private suspend fun monitorMemoryUsage() {
+        while (true) {
+            val memoryInfo = deviceService.getMemoryInfo()
+            
+            if (memoryInfo.availableRAM < MEMORY_THRESHOLD) {
+                val runningGPSApps = appService.getRunningApps()
+                    .filter { app -> 
+                        knownGPSApps.contains(app.packageName) 
+                    }
+                
+                if (runningGPSApps.isNotEmpty()) {
+                    handleLowMemory(runningGPSApps)
+                }
+            }
+            
+            delay(MEMORY_CHECK_INTERVAL)
+        }
+    }
+
+    private suspend fun handleLowMemory(apps: List<GPSApp>) {
+        // Ordenar apps por uso de memória
+        val sortedApps = apps.sortedByDescending { it.memoryUsage }
+        
+        // Fechar apps até liberar memória suficiente
+        sortedApps.forEach { app ->
+            if (deviceService.getAvailableRAM() < MEMORY_THRESHOLD) {
+                closeApp(app)
+            } else {
+                return
+            }
+        }
+    }
+
+    companion object {
+        private const val MEMORY_THRESHOLD = 200L * 1024 * 1024 // 200MB
+        private const val MEMORY_CHECK_INTERVAL = 60000L // 1 minuto
+    }
+}

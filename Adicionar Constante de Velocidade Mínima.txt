@@ -1,0 +1,117 @@
+// Gerenciador de Rotatórias
+// app/src/main/kotlin/com/kingroad/navigation/roundabout
+
+class RoundaboutManager(
+    private val navigationService: NavigationService,
+    private val alertService: AlertService,
+    private val voiceService: VoiceService
+) {
+    data class Roundabout(
+        val id: String,
+        val location: Location,
+        val exits: List<RoundaboutExit>,
+        val targetExitNumber: Int,
+        val radius: Double,
+        val warnings: List<Warning>? = null
+    )
+
+    data class RoundaboutExit(
+        val number: Int,
+        val direction: String,
+        val roadName: String?,
+        val isTarget: Boolean = false
+    )
+
+    // Gerenciar aproximação de rotatória
+    suspend fun handleRoundaboutApproach(
+        roundabout: Roundabout,
+        currentSpeed: Float
+    ) {
+        when {
+            // Alerta inicial a 200m apenas se velocidade >= 60km/h
+            isWithinDistance(roundabout.location, 200.0) && 
+            currentSpeed >= MIN_SPEED_FOR_EARLY_ALERT -> {
+                showInitialAlert(roundabout)
+            }
+            // Alerta de preparação a 100m (todas velocidades)
+            isWithinDistance(roundabout.location, 100.0) -> {
+                showPreparationAlert(roundabout)
+            }
+            // Alerta final a 50m (todas velocidades)
+            isWithinDistance(roundabout.location, 50.0) -> {
+                showFinalAlert(roundabout)
+            }
+        }
+    }
+
+    // Mostrar alerta inicial
+    private suspend fun showInitialAlert(roundabout: Roundabout) {
+        val message = buildString {
+            append("Rotatória a 200 metros. ")
+            append("Prepare-se para pegar a ${roundabout.targetExitNumber}ª saída ")
+            
+            // Adicionar direção se disponível
+            roundabout.exits.find { it.isTarget }?.let { exit ->
+                append("em direção a ${exit.roadName ?: exit.direction}")
+            }
+        }
+
+        alertService.showAlert(
+            message = message,
+            type = AlertType.ROUNDABOUT_APPROACH,
+            priority = AlertPriority.HIGH
+        )
+    }
+
+    // Mostrar alerta de preparação
+    private suspend fun showPreparationAlert(roundabout: Roundabout) {
+        val message = buildString {
+            append("Prepare-se. ")
+            append("Na rotatória, pegue a ${roundabout.targetExitNumber}ª saída")
+        }
+
+        alertService.showAlert(
+            message = message,
+            type = AlertType.ROUNDABOUT_PREPARATION,
+            priority = AlertPriority.HIGH
+        )
+    }
+
+    // Mostrar alerta final
+    private suspend fun showFinalAlert(roundabout: Roundabout) {
+        val message = "Pegue a ${roundabout.targetExitNumber}ª saída"
+
+        alertService.showAlert(
+            message = message,
+            type = AlertType.ROUNDABOUT_FINAL,
+            priority = AlertPriority.HIGH
+        )
+    }
+
+    // Criar ícone dinâmico da rotatória
+    fun createRoundaboutIcon(roundabout: Roundabout): Icon {
+        return Icon(
+            size = IconSize.LARGE,
+            background = createRoundaboutCircle(),
+            number = createExitNumber(roundabout.targetExitNumber),
+            entryArrow = createEntryArrow(),
+            exitArrow = createExitArrow(roundabout.targetExitNumber)
+        )
+    }
+
+    private fun createExitNumber(number: Int): DrawableNumber {
+        return DrawableNumber(
+            value = number,
+            size = 36.0f,
+            color = Color.WHITE,
+            style = NumberStyle.BOLD
+        )
+    }
+
+    companion object {
+        const val INITIAL_ALERT_DISTANCE = 200.0  // metros
+        const val PREP_ALERT_DISTANCE = 100.0     // metros
+        const val FINAL_ALERT_DISTANCE = 50.0     // metros
+        const val MIN_SPEED_FOR_EARLY_ALERT = 60.0f  // km/h
+    }
+}

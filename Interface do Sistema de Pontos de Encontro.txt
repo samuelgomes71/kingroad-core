@@ -1,0 +1,134 @@
+import React, { useState } from 'react';
+import { MapPin, Clock, Truck, Coffee, Droplet, Info } from 'lucide-react';
+
+const MeetingPointInterface = () => {
+  const [meetingPoints, setMeetingPoints] = useState([]);
+  const [selectedPoint, setSelectedPoint] = useState(null);
+  
+  return (
+    <div className="h-screen bg-gray-100 flex">
+      {/* Lista de pontos de encontro */}
+      <div className="w-96 bg-white border-r overflow-y-auto">
+        <div className="p-4 border-b">
+          <h2 className="text-xl font-bold">Pontos de Encontro</h2>
+          <p className="text-sm text-gray-600">Irun → Bordeaux</p>
+        </div>
+
+        <div className="divide-y">
+          {meetingPoints.map((point, index) => (
+            <div
+              key={index}
+              onClick={() => setSelectedPoint(point)}
+              className={`p-4 hover:bg-gray-50 cursor-pointer ${
+                selectedPoint === point ? 'bg-blue-50' : ''
+              }`}
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-semibold">{point.name}</h3>
+                  <p className="text-sm text-gray-600">{point.location}</p>
+                  
+                  {/* Tempos estimados */}
+                  <div className="mt-2 space-y-1">
+                    <div className="flex items-center text-sm">
+                      <Clock size={16} className="mr-2 text-blue-600" />
+                      <span>Motorista 1: {point.time1}</span>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <Clock size={16} className="mr-2 text-green-600" />
+                      <span>Motorista 2: {point.time2}</span>
+                    </div>
+                  </div>
+                  
+                  {/* Facilidades */}
+                  <div className="mt-2 flex space-x-2">
+                    {point.facilities.map((facility, idx) => (
+                      <span
+                        key={idx}
+                        className="px-2 py-1 bg-gray-100 rounded-full text-xs"
+                      >
+                        {facility}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="flex flex-col items-end">
+                  <div className="text-sm font-medium text-blue-600">
+                    {point.waitTime} min espera
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500">
+                    {point.parkingSpots} vagas
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Mapa e detalhes */}
+      <div className="flex-1 flex flex-col">
+        {/* Mapa */}
+        <div className="flex-1 bg-gray-200 p-4">
+          <div className="bg-white rounded-lg h-full">
+            {/* Aqui vai o componente de mapa */}
+          </div>
+        </div>
+
+        {/* Painel de detalhes */}
+        {selectedPoint && (
+          <div className="h-64 bg-white border-t p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-xl font-bold">{selectedPoint.name}</h3>
+                <p className="text-gray-600">{selectedPoint.location}</p>
+
+                <div className="mt-4 grid grid-cols-3 gap-4">
+                  {/* Estacionamento */}
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <Truck className="text-blue-600 mb-2" size={24} />
+                    <div className="text-sm font-medium">Estacionamento</div>
+                    <div className="text-xs text-gray-600">
+                      {selectedPoint.parkingSpots} vagas disponíveis
+                    </div>
+                  </div>
+
+                  {/* Serviços */}
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <Coffee className="text-blue-600 mb-2" size={24} />
+                    <div className="text-sm font-medium">Serviços</div>
+                    <div className="text-xs text-gray-600">
+                      Restaurante, Chuveiros
+                    </div>
+                  </div>
+
+                  {/* Combustível */}
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <Droplet className="text-blue-600 mb-2" size={24} />
+                    <div className="text-sm font-medium">Combustível</div>
+                    <div className="text-xs text-gray-600">
+                      Diesel, AdBlue
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botões de ação */}
+              <div className="flex space-x-2">
+                <button className="p-2 hover:bg-gray-100 rounded-lg">
+                  <Info size={20} className="text-gray-600" />
+                </button>
+                <button className="p-2 hover:bg-gray-100 rounded-lg">
+                  <MapPin size={20} className="text-blue-600" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default MeetingPointInterface;

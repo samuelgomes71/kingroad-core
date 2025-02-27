@@ -1,0 +1,147 @@
+// Sistema de Navegação por Cruzamento
+// app/src/main/kotlin/com/kingroad/navigation/intersection
+
+class IntersectionNavigator(
+    private val geocodingService: GeocodingService,
+    private val routeService: RouteService,
+    private val addressService: AddressService
+) {
+    data class Intersection(
+        val id: String,
+        val location: Location,
+        val streetOne: Street,
+        val streetTwo: Street,
+        val city: String,
+        val state: String,
+        val country: String,
+        val type: IntersectionType,
+        val metadata: IntersectionMetadata? = null
+    )
+
+    data class Street(
+        val name: String,
+        val type: StreetType,
+        val prefix: String? = null,
+        val suffix: String? = null,
+        val alternateNames: List<String> = emptyList()
+    )
+
+    enum class IntersectionType {
+        CROSS,              // Cruzamento normal
+        T_JUNCTION,         // Junção em T
+        Y_JUNCTION,         // Junção em Y
+        ROUNDABOUT,         // Rotatória
+        COMPLEX            // Cruzamento complexo
+    }
+
+    data class IntersectionMetadata(
+        val hasTrafficLight: Boolean = false,
+        val hasTrafficSigns: Boolean = false,
+        val isPedestrianCrossing: Boolean = false,
+        val nearbyPOIs: List<POI> = emptyList()
+    )
+
+    // Buscar cruzamento
+    suspend fun findIntersection(
+        streetOne: String,
+        streetTwo: String,
+        city: String,
+        state: String? = null
+    ): List<Intersection> {
+        // Normalizar nomes das ruas
+        val normalizedStreetOne = normalizeStreetName(streetOne)
+        val normalizedStreetTwo = normalizeStreetName(streetTwo)
+        
+        // Buscar todas as possíveis correspondências
+        return geocodingService.findIntersections(
+            streetOne = normalizedStreetOne,
+            streetTwo = normalizedStreetTwo,
+            city = city,
+            state = state
+        )
+    }
+
+    // Verificar se é um cruzamento válido
+    private suspend fun validateIntersection(intersection: Intersection): Boolean {
+        return addressService.verifyIntersection(
+            streetOne = intersection.streetOne,
+            streetTwo = intersection.streetTwo,
+            city = intersection.city
+        )
+    }
+
+    // Normalizar nome da rua
+    private fun normalizeStreetName(street: String): String {
+        return street
+            .trim()
+            .lowercase()
+            .replace(Regex("\\s+"), " ")
+            .let { name ->
+                // Tratar prefixos e sufixos comuns
+                STREET_PREFIXES.forEach { (prefix, normalized) ->
+                    if (name.startsWith(prefix)) {
+                        return@let name.replaceFirst(prefix, normalized)
+                    }
+                }
+                name
+            }
+            .let { name ->
+                // Tratar sufixos
+                STREET_SUFFIXES.forEach { (suffix, normalized) ->
+                    if (name.endsWith(suffix)) {
+                        return@let name.replaceLast(suffix, normalized)
+                    }
+                }
+                name
+            }
+    }
+
+    // Buscar sugestões de ruas que se cruzam
+    suspend fun findIntersectingStreets(
+        street: String,
+        city: String
+    ): List<Street> {
+        return addressService.findIntersectingStreets(
+            street = normalizeStreetName(street),
+            city = city
+        )
+    }
+
+    // Autocompletar nome da rua
+    suspend fun autocompleteStreet(
+        partial: String,
+        city: String
+    ): List<Street> {
+        if (partial.length < 3) return emptyList()
+        
+        return addressService.autocompleteStreet(
+            partial = normalizeStreetName(partial),
+            city = city
+        )
+    }
+
+    companion object {
+        private val STREET_PREFIXES = mapOf(
+            "r " to "rua ",
+            "av " to "avenida ",
+            "al " to "alameda ",
+            "pc " to "praça ",
+            "rod " to "rodovia "
+        )
+
+        private val STREET_SUFFIXES = mapOf(
+            " r" to " rua",
+            " av" to " avenida",
+            " st" to " street",
+            " rd" to " road",
+            " ave" to " avenue"
+        )
+    }
+}
+
+// Extensões úteis
+fun String.replaceLast(old: String, new: String): String {
+    val index = lastIndexOf(old)
+    if (index == -1) return this
+    return substring(0, index) + new + substring(index + old.length)
+}

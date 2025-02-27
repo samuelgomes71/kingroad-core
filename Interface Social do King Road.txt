@@ -1,0 +1,151 @@
+import React, { useState } from 'react';
+import { MessageCircle, Users, MapPin, Mic, Video, Image, Send, Clock, Phone } from 'lucide-react';
+
+const SocialInterface = () => {
+  const [activeTab, setActiveTab] = useState('messages');
+  const [selectedChat, setSelectedChat] = useState(null);
+  
+  return (
+    <div className="h-screen bg-gray-100 flex">
+      {/* Lista de Chats/Grupos */}
+      <div className="w-80 bg-white border-r">
+        {/* Tabs */}
+        <div className="flex border-b">
+          <button
+            onClick={() => setActiveTab('messages')}
+            className={`flex-1 p-4 ${
+              activeTab === 'messages' ? 'border-b-2 border-blue-600' : ''
+            }`}
+          >
+            <MessageCircle className="mx-auto" />
+          </button>
+          <button
+            onClick={() => setActiveTab('tracking')}
+            className={`flex-1 p-4 ${
+              activeTab === 'tracking' ? 'border-b-2 border-blue-600' : ''
+            }`}
+          >
+            <MapPin className="mx-auto" />
+          </button>
+        </div>
+
+        {/* Lista de Conversas/Grupos */}
+        <div className="overflow-y-auto h-[calc(100vh-64px)]">
+          {activeTab === 'messages' ? (
+            <div className="space-y-2 p-2">
+              {/* Chat Individual */}
+              <div className="p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Users size={24} className="text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="font-semibold">Comboio BR-116</div>
+                    <div className="text-sm text-gray-500">8 motoristas ativos</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grupo de Rota */}
+              <div className="p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <MapPin size={24} className="text-green-600" />
+                  </div>
+                  <div>
+                    <div className="font-semibold">Rota SP-RJ</div>
+                    <div className="text-sm text-gray-500">Alerta: Balança ativa</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2 p-2">
+              {/* Grupos de Rastreamento */}
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <h3 className="font-semibold mb-2">Família</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span>João - Truck #1</span>
+                    <span className="text-green-600 text-sm">Em movimento</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Maria - Truck #2</span>
+                    <span className="text-yellow-600 text-sm">Parada</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Área de Chat/Mapa */}
+      <div className="flex-1 flex flex-col">
+        {activeTab === 'messages' ? (
+          <>
+            {/* Cabeçalho do Chat */}
+            <div className="bg-white p-4 border-b flex justify-between items-center">
+              <div>
+                <h2 className="font-semibold">Comboio BR-116</h2>
+                <span className="text-sm text-gray-500">8 participantes</span>
+              </div>
+              <div className="flex space-x-4">
+                <Phone className="cursor-pointer text-gray-600" />
+                <Video className="cursor-pointer text-gray-600" />
+              </div>
+            </div>
+
+            {/* Área de Mensagens */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Mensagem de Texto */}
+              <div className="flex justify-end">
+                <div className="bg-blue-600 text-white rounded-lg p-3 max-w-md">
+                  <p>Balança da BR-116 km 237 está fechada agora</p>
+                  <span className="text-xs opacity-75">14:30</span>
+                </div>
+              </div>
+
+              {/* Mensagem de Localização */}
+              <div className="flex justify-start">
+                <div className="bg-white rounded-lg p-3 max-w-md shadow-sm">
+                  <div className="bg-gray-100 p-2 rounded mb-2 flex items-center">
+                    <MapPin className="mr-2" />
+                    Compartilhou localização atual
+                  </div>
+                  <span className="text-xs text-gray-500">14:32</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Área de Input */}
+            <div className="bg-white p-4 border-t">
+              <div className="flex items-center space-x-2">
+                <button className="p-2 hover:bg-gray-100 rounded-full">
+                  <Mic size={24} className="text-gray-600" />
+                </button>
+                <input
+                  type="text"
+                  placeholder="Digite uma mensagem..."
+                  className="flex-1 border rounded-full px-4 py-2"
+                />
+                <button className="p-2 hover:bg-gray-100 rounded-full">
+                  <Send size={24} className="text-blue-600" />
+                </button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 bg-gray-200 p-4">
+            {/* Área do Mapa */}
+            <div className="bg-white rounded-lg h-full flex items-center justify-center">
+              Mapa de Rastreamento em Tempo Real
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default SocialInterface;

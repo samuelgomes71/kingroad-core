@@ -1,0 +1,170 @@
+// Sistema de Desvio de Áreas Urbanas
+// app/src/main/kotlin/com/kingroad/routing/urban
+
+class UrbanAvoidanceManager(
+    private val routeService: RouteService,
+    private val cityService: CityService,
+    private val timeService: TimeService,
+    private val trafficService: TrafficService
+) {
+    data class UrbanArea(
+        val city: City,
+        val bypasses: List<Bypass>,
+        val truckRoutes: List<TruckRoute>,
+        val peakHours: List<TimeRange>
+    )
+
+    data class Bypass(
+        val route: Route,
+        val distance: Double,
+        val type: BypassType,
+        val restrictions: List<Restriction>
+    )
+
+    data class TruckRoute(
+        val route: Route,
+        val isVerified: Boolean,
+        val timeRestrictions: List<TimeRange>,
+        val heightClearance: Double,
+        val weightLimit: Double
+    )
+
+    enum class BypassType {
+        OUTER_RING,      // Ex: I-495 around Boston
+        INNER_RING,      // Ex: I-95 through Boston
+        TRUCK_BYPASS,    // Rota específica para caminhões
+        INDUSTRIAL_ROUTE // Rota por área industrial
+    }
+
+    // Planejamento de rota evitando áreas urbanas
+    suspend fun planUrbanAvoidanceRoute(
+        start: Location,
+        destination: Location,
+        vehicle: Vehicle,
+        preferences: RoutePreferences
+    ): Route {
+        // Identificar cidades no caminho
+        val citiesOnRoute = cityService.findCitiesOnPath(start, destination)
+        
+        // Para cada cidade, determinar a melhor estratégia de desvio
+        val routeSegments = citiesOnRoute.map { city ->
+            when {
+                canPassThroughCity(city, vehicle) -> 
+                    planCityPassage(city, vehicle)
+                else -> 
+                    planCityBypass(city, vehicle)
+            }
+        }
+        
+        return routeService.combineSegments(routeSegments)
+    }
+
+    // Verifica se é possível passar pela cidade
+    private suspend fun canPassThroughCity(
+        city: City,
+        vehicle: Vehicle
+    ): Boolean {
+        val currentTime = timeService.getCurrentTime()
+        val verifiedRoute = cityService.getVerifiedTruckRoute(city)
+        
+        return verifiedRoute != null &&
+               isOffPeakHours(currentTime, city) &&
+               meetsRestrictions(vehicle, verifiedRoute)
+    }
+
+    // Planeja desvio da cidade
+    private suspend fun planCityBypass(
+        city: City,
+        vehicle: Vehicle
+    ): Route {
+        // Encontrar anéis externos disponíveis
+        val bypasses = cityService.findBypasses(city)
+            .sortedBy { it.type.ordinal }
+        
+        // Escolher o bypass mais apropriado
+        val selectedBypass = bypasses.firstOrNull { bypass ->
+            isBypassSuitable(bypass, vehicle) &&
+            !hasTrafficIssues(bypass.route)
+        } ?: findAlternativeBypass(city, vehicle)
+        
+        return selectedBypass.route
+    }
+
+    // Planeja passagem necessária pela cidade
+    private suspend fun planCityPassage(
+        city: City,
+        vehicle: Vehicle
+    ): Route {
+        val destination = findFinalDestination(city)
+        
+        // Se o destino é na cidade, encontrar melhor ponto de entrada
+        return if (isDestinationInCity(destination, city)) {
+            planMinimalUrbanRoute(
+                city = city,
+                destination = destination,
+                vehicle = vehicle
+            )
+        } else {
+            // Se precisa atravessar, usar rota de caminhões verificada
+            cityService.getVerifiedTruckRoute(city)?.route
+                ?: throw NoSafeRouteException(city)
+        }
+    }
+
+    // Encontra melhor rota urbana mínima
+    private suspend fun planMinimalUrbanRoute(
+        city: City,
+        destination: Location,
+        vehicle: Vehicle
+    ): Route {
+        // Encontrar ponto de saída da rodovia mais próximo do destino
+        val exitPoint = findOptimalHighwayExit(city, destination)
+        
+        // Criar rota da saída até o destino
+        return routeService.calculateRoute(
+            start = exitPoint,
+            end = destination,
+            restrictions = createUrbanRestrictions(vehicle),
+            preferences = RoutePreferences(
+                avoidResidentialAreas = true,
+                preferIndustrialRoutes = true,
+                maximizeHighwayUsage = true
+            )
+        )
+    }
+
+    // Verifica se é horário de baixo movimento
+    private fun isOffPeakHours(time: LocalTime, city: City): Boolean {
+        val peakHours = cityService.getPeakHours(city)
+        return !peakHours.any { range ->
+            time.isWithin(range)
+        }
+    }
+
+    // Cria restrições para área urbana
+    private fun createUrbanRestrictions(vehicle: Vehicle): List<Restriction> {
+        return listOf(
+            ResidentialAreaRestriction(allowed = false),
+            SchoolZoneRestriction(allowed = false),
+            NarrowStreetRestriction(minWidth = vehicle.width * 1.5),
+            HeightRestriction(minHeight = vehicle.height + 0.5),
+            WeightRestriction(maxWeight = vehicle.weight),
+            TurningRadiusRestriction(minRadius = vehicle.turningRadius * 1.2)
+        )
+    }
+
+    companion object {
+        const val MIN_BYPASS_DISTANCE = 1000.0 // metros
+        const val MAX_URBAN_PENETRATION = 2000.0 // metros
+        const val PEAK_HOURS_BUFFER = 60 // minutos
+    }
+}
+
+// Exceção para quando não há rota segura
+class NoSafeRouteException(city: City) : 
+    Exception("Não há rota segura através de ${city.name}")
+
+// Extensões úteis
+fun LocalTime.isWithin(range: TimeRange): Boolean {
+    return this.isAfter(range.start) && this.isBefore(range.end)
+}

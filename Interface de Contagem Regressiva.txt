@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200">
+    <!-- Background -->
+    <rect width="800" height="200" fill="#1E1E1E"/>
+    
+    <!-- Próximo Comando - Distância -->
+    <g transform="translate(50, 30)">
+        <!-- Container -->
+        <rect x="0" y="0" width="200" height="120" rx="10" fill="#252525"/>
+        
+        <!-- Tempo/Distância -->
+        <text x="100" y="45" fill="#FFFFFF" font-family="Arial" font-size="32" text-anchor="middle">500m</text>
+        
+        <!-- Linha divisória -->
+        <line x1="20" y1="60" x2="180" y2="60" stroke="#444444" stroke-width="2"/>
+        
+        <!-- Descrição do próximo comando -->
+        <text x="100" y="90" fill="#FFFFFF" font-family="Arial" font-size="16" text-anchor="middle">Próxima Saída</text>
+    </g>
+
+    <!-- Cronômetro/Timer -->
+    <g transform="translate(300, 30)">
+        <!-- Container -->
+        <rect x="0" y="0" width="200" height="120" rx="10" fill="#252525"/>
+        
+        <!-- Tempo -->
+        <text x="100" y="45" fill="#FFFFFF" font-family="Arial" font-size="32" text-anchor="middle">2:30</text>
+        
+        <!-- Linha divisória -->
+        <line x1="20" y1="60" x2="180" y2="60" stroke="#444444" stroke-width="2"/>
+        
+        <!-- Descrição -->
+        <text x="100" y="90" fill="#FFFFFF" font-family="Arial" font-size="16" text-anchor="middle">Tempo Estimado</text>
+    </g>
+
+    <!-- Próximo Comando com Velocidade -->
+    <g transform="translate(550, 30)">
+        <!-- Container -->
+        <rect x="0" y="0" width="200" height="120" rx="10" fill="#252525"/>
+        
+        <!-- Distância -->
+        <text x="100" y="35" fill="#FFFFFF" font-family="Arial" font-size="32" text-anchor="middle">500m</text>
+        
+        <!-- Velocidade -->
+        <text x="100" y="65" fill="#00FF00" font-family="Arial" font-size="24" text-anchor="middle">80 km/h</text>
+        
+        <!-- Linha divisória -->
+        <line x1="20" y1="80" x2="180" y2="80" stroke="#444444" stroke-width="2"/>
+        
+        <!-- Descrição -->
+        <text x="100" y="100" fill="#FFFFFF" font-family="Arial" font-size="16" text-anchor="middle">Velocidade Ideal</text>
+    </g>
+</svg>

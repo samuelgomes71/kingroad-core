@@ -1,0 +1,119 @@
+import React, { useState } from 'react';
+import { MessageCircle, MapPin, MessageSquare, Navigation, Settings, Bell } from 'lucide-react';
+
+const KingUnifiedInterface = () => {
+  const [activeService, setActiveService] = useState('road');
+  const [notifications, setNotifications] = useState([]);
+  
+  return (
+    <div className="h-screen bg-gray-100">
+      {/* Barra superior unificada */}
+      <div className="bg-blue-700 p-4 flex justify-between items-center">
+        <div className="text-white text-xl font-bold">
+          {activeService === 'road' && 'King Road'}
+          {activeService === 'messenger' && 'King Messenger'}
+          {activeService === 'loc' && 'KingLoc'}
+          {activeService === 'sms' && 'King SMS'}
+        </div>
+        <div className="flex items-center space-x-4">
+          <Bell className="text-white cursor-pointer" size={24} />
+          <Settings className="text-white cursor-pointer" size={24} />
+        </div>
+      </div>
+
+      {/* Menu de serviços */}
+      <div className="bg-white border-b">
+        <div className="flex justify-around p-2">
+          <button
+            onClick={() => setActiveService('road')}
+            className={`p-3 rounded-lg flex flex-col items-center ${
+              activeService === 'road' ? 'text-blue-600' : 'text-gray-600'
+            }`}
+          >
+            <Navigation size={24} />
+            <span className="text-xs mt-1">King Road</span>
+          </button>
+
+          <button
+            onClick={() => setActiveService('messenger')}
+            className={`p-3 rounded-lg flex flex-col items-center ${
+              activeService === 'messenger' ? 'text-blue-600' : 'text-gray-600'
+            }`}
+          >
+            <MessageCircle size={24} />
+            <span className="text-xs mt-1">Messenger</span>
+          </button>
+
+          <button
+            onClick={() => setActiveService('loc')}
+            className={`p-3 rounded-lg flex flex-col items-center ${
+              activeService === 'loc' ? 'text-blue-600' : 'text-gray-600'
+            }`}
+          >
+            <MapPin size={24} />
+            <span className="text-xs mt-1">KingLoc</span>
+          </button>
+
+          <button
+            onClick={() => setActiveService('sms')}
+            className={`p-3 rounded-lg flex flex-col items-center ${
+              activeService === 'sms' ? 'text-blue-600' : 'text-gray-600'
+            }`}
+          >
+            <MessageSquare size={24} />
+            <span className="text-xs mt-1">SMS</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Área de conteúdo */}
+      <div className="flex-1">
+        {activeService === 'road' && (
+          <div className="p-4">
+            <h2 className="text-xl font-bold mb-4">Navegação</h2>
+            {/* Conteúdo do King Road */}
+          </div>
+        )}
+
+        {activeService === 'messenger' && (
+          <div className="p-4">
+            <h2 className="text-xl font-bold mb-4">Mensagens</h2>
+            {/* Conteúdo do King Messenger */}
+          </div>
+        )}
+
+        {activeService === 'loc' && (
+          <div className="p-4">
+            <h2 className="text-xl font-bold mb-4">Localização</h2>
+            {/* Conteúdo do KingLoc */}
+          </div>
+        )}
+
+        {activeService === 'sms' && (
+          <div className="p-4">
+            <h2 className="text-xl font-bold mb-4">SMS</h2>
+            {/* Conteúdo do King SMS */}
+          </div>
+        )}
+      </div>
+
+      {/* Centro de notificações */}
+      <div className="fixed top-16 right-4 w-80 bg-white rounded-lg shadow-lg p-4 hidden">
+        <h3 className="font-bold mb-3">Notificações</h3>
+        <div className="space-y-2">
+          {notifications.map((notification, index) => (
+            <div
+              key={index}
+              className="p-2 border-l-4 border-blue-500 bg-blue-50 rounded"
+            >
+              <div className="font-medium">{notification.title}</div>
+              <div className="text-sm text-gray-600">{notification.message}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default KingUnifiedInterface;

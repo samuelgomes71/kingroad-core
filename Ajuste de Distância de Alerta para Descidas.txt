@@ -1,0 +1,157 @@
+// Sistema de Alertas de Infraestrutura Rodoviária
+// app/src/main/kotlin/com/kingroad/alerts/infrastructure
+
+class RoadInfrastructureManager(
+    private val locationService: LocationService,
+    private val alertService: AlertService,
+    private val infrastructureService: InfrastructureService
+) {
+    data class InfrastructurePoint(
+        val type: InfrastructureType,
+        val location: Location,
+        val details: InfrastructureDetails,
+        val status: OperationalStatus = OperationalStatus.OPERATIONAL
+    )
+
+    enum class InfrastructureType {
+        TOLL_BOOTH,          // Pedágio
+        POLICE_STATION,      // PRF
+        WEIGHT_STATION,      // Balança
+        DANGEROUS_DESCENT,   // Serra perigosa
+        ESCAPE_AREA          // Área de escape
+    }
+
+    data class InfrastructureDetails(
+        val name: String,
+        val price: Double? = null,        // Para pedágios
+        val weight: Double? = null,       // Para balanças
+        val slope: Double? = null,        // Para descidas
+        val accidents: Int? = null,       // Histórico de acidentes
+        val nextEscapeArea: Double? = null // Distância para próxima área de escape
+    )
+
+    enum class OperationalStatus {
+        OPERATIONAL,     // Funcionando normalmente
+        CLOSED,         // Fechado
+        PARTIAL,        // Operação parcial
+        CONGESTED      // Congestionado
+    }
+
+    // Monitorar pontos de infraestrutura
+    suspend fun startInfrastructureMonitoring() {
+        locationService.startLocationUpdates { location ->
+            checkNearbyInfrastructure(location)
+        }
+    }
+
+    // Verificar infraestrutura próxima
+    private suspend fun checkNearbyInfrastructure(location: Location) {
+        val points = infrastructureService.getNearbyPoints(
+            location = location,
+            radius = ALERT_RADIUS
+        )
+
+        points.forEach { point ->
+            processInfrastructurePoint(point, location)
+        }
+    }
+
+    // Processar ponto de infraestrutura
+    private suspend fun processInfrastructurePoint(
+        point: InfrastructurePoint,
+        currentLocation: Location
+    ) {
+        val distance = calculateDistance(currentLocation, point.location)
+        
+        when (point.type) {
+            InfrastructureType.TOLL_BOOTH -> processTollBooth(point, distance)
+            InfrastructureType.POLICE_STATION -> processPoliceStation(point, distance)
+            InfrastructureType.WEIGHT_STATION -> processWeightStation(point, distance)
+            InfrastructureType.DANGEROUS_DESCENT -> processDangerousDescent(point, distance)
+            InfrastructureType.ESCAPE_AREA -> processEscapeArea(point, distance)
+        }
+    }
+
+    // Processar pedágio
+    private suspend fun processTollBooth(point: InfrastructurePoint, distance: Double) {
+        if (distance <= TOLL_ALERT_DISTANCE) {
+            val message = buildString {
+                append("Pedágio a ${formatDistance(distance)}. ")
+                point.details.price?.let { price ->
+                    append("Valor: R$ $price. ")
+                }
+                if (point.status == OperationalStatus.CONGESTED) {
+                    append("Tráfego intenso no local. ")
+                }
+            }
+            
+            alertService.showAlert(
+                message = message,
+                type = AlertType.TOLL,
+                priority = AlertPriority.MEDIUM
+            )
+        }
+    }
+
+    // Processar PRF
+    private suspend fun processPoliceStation(point: InfrastructurePoint, distance: Double) {
+        if (distance <= POLICE_ALERT_DISTANCE) {
+            val message = "Posto da Polícia Rodoviária Federal a ${formatDistance(distance)}."
+            
+            alertService.showAlert(
+                message = message,
+                type = AlertType.POLICE,
+                priority = AlertPriority.HIGH
+            )
+        }
+    }
+
+    // Processar serra perigosa
+    private suspend fun processDangerousDescent(point: InfrastructurePoint, distance: Double) {
+        if (distance <= DESCENT_ALERT_DISTANCE) {
+            val message = buildString {
+                append("Atenção! Início de serra perigosa a ${formatDistance(distance)}. ")
+                point.details.slope?.let { slope ->
+                    append("Descida de $slope%. ")
+                }
+                point.details.nextEscapeArea?.let { escapeDistance ->
+                    append("Próxima área de escape a ${formatDistance(escapeDistance)}. ")
+                }
+                point.details.accidents?.let { accidents ->
+                    append("Alto índice de acidentes neste trecho. ")
+                }
+            }
+            
+            alertService.showAlert(
+                message = message,
+                type = AlertType.DANGEROUS_DESCENT,
+                priority = AlertPriority.HIGH
+            )
+        }
+    }
+
+    companion object {
+        const val ALERT_RADIUS = 5000.0        // 5km
+        const val TOLL_ALERT_DISTANCE = 2000.0  // 2km
+        const val POLICE_ALERT_DISTANCE = 2000.0 // 2km
+        const val DESCENT_ALERT_DISTANCE = 500.0 // 500m
+    }
+}
+
+// Tipos de alerta
+enum class AlertType {
+    TOLL,
+    POLICE,
+    WEIGHT_STATION,
+    DANGEROUS_DESCENT,
+    ESCAPE_AREA
+}
+
+// Interface de alertas
+interface AlertService {
+    suspend fun showAlert(
+        message: String,
+        type: AlertType,
+        priority: AlertPriority
+    )
+}

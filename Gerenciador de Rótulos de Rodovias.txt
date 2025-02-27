@@ -1,0 +1,156 @@
+// RoadLabelManager.kt
+class RoadLabelManager(
+    private val mapService: MapService,
+    private val roadService: RoadService
+) {
+    data class HighwayInfo(
+        val id: String,
+        val number: String? = null,
+        val prefix: String? = null,
+        val name: String? = null,
+        val shortName: String? = null,
+        val type: HighwayType,
+        val location: Location
+    )
+
+    data class ExitInfo(
+        val id: String,
+        val exitNumber: String,
+        val location: Location,
+        val highway: HighwayInfo,
+        val type: ExitType = ExitType.STANDARD
+    )
+
+    enum class HighwayType {
+        INTERSTATE,    // I-95
+        US_HIGHWAY,    // US 1
+        STATE_HIGHWAY, // FL 826
+        PROVINCIAL,    // ON 401
+        NAMED_ONLY     // QEW
+    }
+
+    enum class ExitType {
+        STANDARD,
+        LEFT_EXIT,
+        SPLIT_EXIT,
+        REST_AREA
+    }
+
+    // Obter informações da rodovia formatadas
+    suspend fun getHighwayLabel(highwayId: String): HighwayInfo {
+        val highway = roadService.getHighwayInfo(highwayId)
+        
+        return when {
+            // Rodovias com número
+            highway.number != null -> HighwayInfo(
+                id = highway.id,
+                number = highway.number,
+                prefix = getHighwayPrefix(highway.type),
+                type = highway.type,
+                location = highway.location
+            )
+            
+            // Rodovias apenas com nome (como QEW)
+            else -> HighwayInfo(
+                id = highway.id,
+                name = highway.name,
+                shortName = generateShortName(highway.name),
+                type = HighwayType.NAMED_ONLY,
+                location = highway.location
+            )
+        }
+    }
+
+    // Obter informações da saída
+    suspend fun getExitLabel(exitId: String): ExitInfo {
+        val exit = roadService.getExitInfo(exitId)
+        val highway = getHighwayLabel(exit.highwayId)
+
+        return ExitInfo(
+            id = exit.id,
+            exitNumber = formatExitNumber(exit.number),
+            location = exit.location,
+            highway = highway,
+            type = determineExitType(exit)
+        )
+    }
+
+    // Determinar prefixo da rodovia
+    private fun getHighwayPrefix(type: HighwayType): String? {
+        return when (type) {
+            HighwayType.INTERSTATE -> "I-"
+            HighwayType.US_HIGHWAY -> "US "
+            HighwayType.STATE_HIGHWAY -> when(getCurrentState()) {
+                "SP" -> "SP "
+                "FL" -> "FL "
+                // Adicionar outros estados conforme necessário
+                else -> null
+            }
+            HighwayType.PROVINCIAL -> when(getCurrentProvince()) {
+                "ON" -> "ON "
+                "BC" -> "BC "
+                // Adicionar outras províncias conforme necessário
+                else -> null
+            }
+            HighwayType.NAMED_ONLY -> null
+        }
+    }
+
+    // Gerar nome curto para rodovias nomeadas
+    private fun generateShortName(fullName: String): String {
+        // Casos especiais conhecidos
+        return when (fullName) {
+            "Queen Elizabeth Way" -> "QEW"
+            "Don Valley Parkway" -> "DVP"
+            "Gardiner Expressway" -> "GDEX"
+            // Adicionar outros casos conforme necessário
+            else -> fullName
+        }
+    }
+
+    // Formatar número da saída
+    private fun formatExitNumber(number: String): String {
+        // Remover qualquer texto desnecessário, manter apenas o número
+        return number.replace(Regex("[^0-9A-Z]"), "")
+    }
+
+    // Determinar tipo de saída
+    private fun determineExitType(exit: RoadExit): ExitType {
+        return when {
+            exit.isLeftExit -> ExitType.LEFT_EXIT
+            exit.isSplit -> ExitType.SPLIT_EXIT
+            exit.isRestArea -> ExitType.REST_AREA
+            else -> ExitType.STANDARD
+        }
+    }
+
+    // Atualizar posições dos rótulos no zoom
+    suspend fun updateLabelPositions(
+        visibleRegion: VisibleRegion,
+        zoomLevel: Float
+    ): List<LabelPosition> {
+        val highways = roadService.getHighwaysInRegion(visibleRegion)
+        val exits = roadService.getExitsInRegion(visibleRegion)
+
+        return highways.map { highway ->
+            LabelPosition(
+                id = highway.id,
+                location = calculateLabelPosition(highway.location, zoomLevel),
+                size = FIXED_LABEL_SIZE,
+                rotation = calculateLabelRotation(highway)
+            )
+        } + exits.map { exit ->
+            LabelPosition(
+                id = exit.id,
+                location = calculateLabelPosition(exit.location, zoomLevel),
+                size = FIXED_LABEL_SIZE,
+                rotation = 0f // Saídas não rotacionam
+            )
+        }
+    }
+
+    companion object {
+        const val FIXED_LABEL_SIZE = 24f // dp
+        const val MIN_LABEL_SPACING = 50f // dp
+    }
+}

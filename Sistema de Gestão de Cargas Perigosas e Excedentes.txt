@@ -1,0 +1,210 @@
+// Sistema de Gestão de Cargas Perigosas e Excedentes
+// app/src/main/kotlin/com/kingroad/routing/special
+
+class SpecialCargoManager(
+    private val routeService: RouteService,
+    private val restrictionService: RestrictionService,
+    private val regulationService: RegulationService
+) {
+    // Cargas Perigosas
+    data class HazmatCargo(
+        val unNumber: String,
+        val hazmatClass: HazmatClass,
+        val subClass: List<String>,
+        val placards: List<String>,
+        val quantity: Double
+    )
+
+    // Classes de produtos perigosos
+    enum class HazmatClass {
+        CLASS_1,  // Explosivos
+        CLASS_2,  // Gases
+        CLASS_3,  // Líquidos Inflamáveis
+        CLASS_4,  // Sólidos Inflamáveis
+        CLASS_5,  // Oxidantes
+        CLASS_6,  // Tóxicos
+        CLASS_7,  // Radioativos
+        CLASS_8,  // Corrosivos
+        CLASS_9   // Diversos
+    }
+
+    // Cargas Excedentes
+    data class OversizeCargo(
+        val length: Double,
+        val width: Double,
+        val height: Double,
+        val weight: Double,
+        val requiresEscort: Boolean,
+        val specialPermits: List<String>
+    )
+
+    // Restrições específicas
+    data class SpecialRestriction(
+        val type: RestrictionType,
+        val location: Location,
+        val affectedClasses: List<HazmatClass>,
+        val alternativeRoute: Route?,
+        val timeRestrictions: List<TimeRange>?,
+        val weatherRestrictions: List<WeatherCondition>?
+    )
+
+    // Calcular rota para carga perigosa
+    suspend fun calculateHazmatRoute(
+        start: Location,
+        destination: Location,
+        cargo: HazmatCargo,
+        vehicle: Vehicle
+    ): Route {
+        // Obter restrições específicas para a classe
+        val restrictions = getHazmatRestrictions(
+            cargo.hazmatClass,
+            cargo.subClass
+        )
+        
+        // Verificar túneis e áreas restritas
+        val restrictedAreas = findRestrictedAreas(
+            start = start,
+            end = destination,
+            hazmatClass = cargo.hazmatClass
+        )
+        
+        // Calcular rota evitando restrições
+        return routeService.calculateRoute(
+            start = start,
+            end = destination,
+            restrictions = restrictions,
+            avoidAreas = restrictedAreas,
+            preferences = createHazmatPreferences(cargo)
+        )
+    }
+
+    // Calcular rota para carga excedente
+    suspend fun calculateOversizeRoute(
+        start: Location,
+        destination: Location,
+        cargo: OversizeCargo,
+        vehicle: Vehicle
+    ): Route {
+        // Verificar necessidade de escolta
+        if (cargo.requiresEscort) {
+            validateEscortRequirements(cargo)
+        }
+        
+        // Obter permissões necessárias
+        val requiredPermits = getRequiredPermits(
+            cargo = cargo,
+            start = start,
+            end = destination
+        )
+        
+        // Verificar restrições dimensionais
+        val heightRestrictions = findHeightRestrictions(
+            start = start,
+            end = destination,
+            height = cargo.height
+        )
+        
+        // Calcular rota considerando dimensões
+        return routeService.calculateRoute(
+            start = start,
+            end = destination,
+            restrictions = createOversizeRestrictions(cargo),
+            avoidAreas = heightRestrictions,
+            preferences = createOversizePreferences(cargo)
+        )
+    }
+
+    // Obter restrições para materiais perigosos
+    private suspend fun getHazmatRestrictions(
+        hazmatClass: HazmatClass,
+        subClasses: List<String>
+    ): List<Restriction> {
+        return regulationService.getHazmatRestrictions(hazmatClass).map {
+            when (it.type) {
+                RestrictionType.TUNNEL -> TunnelRestriction(
+                    allowedClasses = it.allowedClasses,
+                    alternativeRoute = it.alternativeRoute
+                )
+                RestrictionType.URBAN -> UrbanRestriction(
+                    allowedClasses = it.allowedClasses,
+                    timeRestrictions = it.timeRestrictions
+                )
+                RestrictionType.BRIDGE -> BridgeRestriction(
+                    allowedClasses = it.allowedClasses,
+                    weatherRestrictions = it.weatherRestrictions
+                )
+            }
+        }
+    }
+
+    // Criar restrições para cargas excedentes
+    private fun createOversizeRestrictions(cargo: OversizeCargo): List<Restriction> {
+        return listOf(
+            HeightRestriction(minClearance = cargo.height + SAFETY_MARGIN),
+            WidthRestriction(minWidth = cargo.width * 1.5),
+            WeightRestriction(maxWeight = cargo.weight),
+            LengthRestriction(maxLength = cargo.length),
+            TurningRadiusRestriction(
+                minRadius = calculateRequiredTurningRadius(cargo)
+            ),
+            BridgeRestriction(maxWeight = cargo.weight),
+            WeatherRestriction(
+                conditions = listOf(
+                    WeatherCondition.HIGH_WINDS,
+                    WeatherCondition.SEVERE_WEATHER
+                )
+            )
+        )
+    }
+
+    // Verificar túneis e rotas alternativas
+    private suspend fun findRestrictedAreas(
+        start: Location,
+        end: Location,
+        hazmatClass: HazmatClass
+    ): List<RestrictedArea> {
+        val area = calculateRouteArea(start, end)
+        
+        return restrictionService.getRestrictedAreas(area).filter { 
+            it.affectedClasses.contains(hazmatClass)
+        }
+    }
+
+    companion object {
+        const val SAFETY_MARGIN = 0.5 // metros
+        const val MIN_TUNNEL_CLEARANCE = 4.5 // metros
+        const val MIN_BRIDGE_CLEARANCE = 4.8 // metros
+    }
+}
+
+// Tipos de restrições
+enum class RestrictionType {
+    TUNNEL,
+    BRIDGE,
+    URBAN,
+    WEATHER,
+    TIME
+}
+
+// Condições climáticas
+enum class WeatherCondition {
+    HIGH_WINDS,
+    HEAVY_RAIN,
+    SNOW,
+    ICE,
+    FOG,
+    SEVERE_WEATHER
+}
+
+// Exemplos específicos de restrições
+data class TunnelRestriction(
+    val tunnelId: String,
+    val allowedClasses: List<HazmatClass>,
+    val alternativeRoute: Route?
+)
+
+data class BridgeRestriction(
+    val bridgeId: String,
+    val allowedClasses: List<HazmatClass>,
+    val weatherRestrictions: List<WeatherCondition>?
+)

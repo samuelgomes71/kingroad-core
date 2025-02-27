@@ -1,0 +1,188 @@
+import React, { useState } from 'react';
+import { Menu, Volume2, ChevronUp, X, AlertTriangle, Search, MapPin, Map } from 'lucide-react';
+
+// Temas padrão
+const defaultThemes = {
+  modern: {
+    colors: {
+      background: '#121212',
+      surface: '#1E1E1E',
+      primary: '#3498db',
+      secondary: '#2ecc71',
+      accent: '#e74c3c',
+      text: '#FFFFFF',
+      textSecondary: '#95a5a6'
+    }
+  },
+  classic: {
+    colors: {
+      background: '#141E30',
+      surface: '#243B55',
+      primary: '#4A90E2',
+      secondary: '#50C878',
+      accent: '#FF6B6B',
+      text: '#FFFFFF',
+      textSecondary: '#B8C6D1'
+    }
+  }
+};
+
+const KingRoadNavigation = ({ 
+  theme = 'modern',
+  onThemeChange = () => {},
+  initialRoute = null,
+  pois = [],
+  themes = defaultThemes
+}) => {
+  const [showSearch, setShowSearch] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
+
+  // Usar tema padrão se o tema solicitado não existir
+  const currentTheme = themes[theme] || defaultThemes.modern;
+  const colors = currentTheme.colors;
+
+  // Dados de exemplo para POIs
+  const defaultPois = [
+    {
+      id: '1',
+      name: 'Truck Stop A',
+      distance: '2.5 km',
+      amenities: ['Fuel', 'Restaurant', 'Showers']
+    },
+    {
+      id: '2',
+      name: 'Rest Area',
+      distance: '5 km',
+      amenities: ['Parking', 'Restrooms']
+    }
+  ];
+
+  // Usar POIs fornecidos ou dados de exemplo
+  const displayPois = pois.length > 0 ? pois : defaultPois;
+
+  // Componentes da interface
+  const SearchBar = () => (
+    <div className="absolute top-0 left-0 right-0 p-4" style={{ backgroundColor: colors.surface }}>
+      <div className="flex items-center">
+        <input
+          type="text"
+          placeholder="Search destination..."
+          className="flex-1 px-4 py-2 rounded-lg"
+          style={{ 
+            backgroundColor: colors.background,
+            color: colors.text
+          }}
+        />
+        <button 
+          onClick={() => setShowSearch(false)}
+          className="ml-2 p-2 rounded-lg"
+          style={{ backgroundColor: colors.background }}
+        >
+          <X size={20} style={{ color: colors.textSecondary }} />
+        </button>
+      </div>
+    </div>
+  );
+
+  const Sidebar = () => (
+    <div 
+      className="absolute top-0 bottom-0 right-0 w-64 bg-opacity-90"
+      style={{ backgroundColor: colors.surface }}
+    >
+      <div className="p-4">
+        <h2 style={{ color: colors.text }} className="font-bold mb-4">
+          Nearby POIs
+        </h2>
+        <div className="space-y-2">
+          {displayPois.map((poi) => (
+            <div 
+              key={poi.id}
+              className="p-3 rounded-lg"
+              style={{ backgroundColor: colors.background }}
+            >
+              <div className="flex justify-between items-start">
+                <div style={{ color: colors.text }} className="font-medium">
+                  {poi.name}
+                </div>
+                <div style={{ color: colors.primary }} className="text-sm">
+                  {poi.distance}
+                </div>
+              </div>
+              <div 
+                className="mt-1 text-sm"
+                style={{ color: colors.textSecondary }}
+              >
+                {poi.amenities.join(' • ')}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const BottomBar = () => (
+    <div className="absolute bottom-4 left-4 flex space-x-4">
+      {[Menu, Map, Volume2].map((Icon, index) => (
+        <button 
+          key={index}
+          className="p-3 rounded-full"
+          style={{ backgroundColor: colors.surface }}
+        >
+          <Icon size={24} style={{ color: colors.textSecondary }} />
+        </button>
+      ))}
+    </div>
+  );
+
+  return (
+    <div 
+      className="relative h-screen"
+      style={{ backgroundColor: colors.background }}
+    >
+      {/* Interface principal */}
+      {showSearch ? (
+        <SearchBar />
+      ) : (
+        <button 
+          className="absolute top-4 left-4 p-3 rounded-full"
+          style={{ backgroundColor: colors.surface }}
+          onClick={() => setShowSearch(true)}
+        >
+          <Search size={24} style={{ color: colors.textSecondary }} />
+        </button>
+      )}
+
+      {showSidebar && <Sidebar />}
+      <BottomBar />
+
+      {/* Alerta de exemplo */}
+      <div 
+        className="absolute bottom-20 left-4 right-4 p-4 rounded-lg"
+        style={{ backgroundColor: colors.accent }}
+      >
+        <div className="flex items-center">
+          <AlertTriangle 
+            size={24} 
+            className="mr-2"
+            style={{ color: colors.text }}
+          />
+          <div style={{ color: colors.text }}>
+            Weight restriction ahead: 17t
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Componente de demonstração
+const DemoComponent = () => {
+  return (
+    <div className="h-screen">
+      <KingRoadNavigation />
+    </div>
+  );
+};
+
+export default KingRoadNavigation;

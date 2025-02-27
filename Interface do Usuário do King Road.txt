@@ -1,0 +1,92 @@
+import React, { useState } from 'react';
+import { Bell, Map, Truck, Building2, Settings, Menu } from 'lucide-react';
+
+const KingRoadInterface = () => {
+  const [notifications, setNotifications] = useState([
+    {
+      type: 'truckstop',
+      status: 'available',
+      message: 'Truck Stop a 5km: 15 vagas disponíveis'
+    },
+    {
+      type: 'weighstation',
+      status: 'warning',
+      message: 'Balança a 20km: Aberta - Inspeção completa'
+    }
+  ]);
+
+  return (
+    <div className="h-screen bg-gray-100">
+      {/* Barra superior simples */}
+      <div className="bg-blue-600 p-4 flex justify-between items-center">
+        <div className="text-white text-xl font-bold">King Road</div>
+        <Bell className="text-white cursor-pointer" size={24} />
+      </div>
+
+      {/* Menu principal com ícones grandes */}
+      <div className="p-4 grid grid-cols-2 gap-4">
+        <button className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center">
+          <Map size={48} className="text-blue-600 mb-2" />
+          <span className="text-lg">Navegação</span>
+        </button>
+
+        <button className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center">
+          <Truck size={48} className="text-blue-600 mb-2" />
+          <span className="text-lg">Paradas</span>
+        </button>
+
+        <button className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center">
+          <Building2 size={48} className="text-blue-600 mb-2" />
+          <span className="text-lg">Balanças</span>
+        </button>
+
+        <button className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center">
+          <Settings size={48} className="text-blue-600 mb-2" />
+          <span className="text-lg">Configurações</span>
+        </button>
+      </div>
+
+      {/* Área de notificações em tempo real */}
+      <div className="p-4">
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <h2 className="text-lg font-semibold mb-2">Atualizações Próximas</h2>
+          <div className="space-y-2">
+            {notifications.map((notification, index) => (
+              <div key={index} className="flex items-center text-sm text-gray-600">
+                <div 
+                  className={`w-2 h-2 rounded-full mr-2 ${
+                    notification.type === 'truckstop' ? 'bg-green-500' : 'bg-red-500'
+                  }`}
+                />
+                {notification.message}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Modal de Feedback (exemplo para truck stops) */}
+      <div className="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div className="bg-white p-6 rounded-lg w-full max-w-sm mx-4">
+          <h3 className="text-xl font-bold mb-4">Status do Truck Stop</h3>
+          <div className="space-y-4">
+            <button className="w-full p-4 bg-green-500 text-white rounded-lg">
+              Muitas vagas disponíveis
+            </button>
+            <button className="w-full p-4 bg-yellow-500 text-white rounded-lg">
+              Algumas vagas disponíveis
+            </button>
+            <button className="w-full p-4 bg-blue-500 text-white rounded-lg">
+              Apenas vagas pagas
+            </button>
+            <button className="w-full p-4 bg-red-500 text-white rounded-lg">
+              Lotado
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default KingRoadInterface;

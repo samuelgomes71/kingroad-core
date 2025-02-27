@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200">
+    <!-- Background -->
+    <rect width="800" height="200" fill="#1E1E1E"/>
+    
+    <!-- Pedágio -->
+    <g transform="translate(50, 30)">
+        <circle cx="40" cy="40" r="30" fill="#FFD700"/>
+        <rect x="25" y="30" width="30" height="20" fill="#000"/>
+        <rect x="35" y="20" width="10" height="40" fill="#FF0000"/>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial" font-size="12">Pedágio</text>
+    </g>
+
+    <!-- PRF -->
+    <g transform="translate(150, 30)">
+        <circle cx="40" cy="40" r="30" fill="#003366"/>
+        <text x="40" y="45" fill="white" text-anchor="middle" font-family="Arial" font-size="16" font-weight="bold">PRF</text>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial" font-size="12">Polícia Rodoviária</text>
+    </g>
+
+    <!-- Balança -->
+    <g transform="translate(250, 30)">
+        <circle cx="40" cy="40" r="30" fill="#4CAF50"/>
+        <path d="M 25,40 L 55,40 M 35,35 L 45,35 M 30,45 L 50,45" stroke="white" stroke-width="3"/>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial" font-size="12">Balança</text>
+    </g>
+
+    <!-- Serra/Descida Perigosa -->
+    <g transform="translate(350, 30)">
+        <circle cx="40" cy="40" r="30" fill="#FF4444"/>
+        <path d="M 25,30 L 40,50 L 55,30" fill="none" stroke="white" stroke-width="3"/>
+        <text x="40" y="40" fill="white" text-anchor="middle" font-family="Arial" font-size="14">12%</text>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial" font-size="12">Serra Perigosa</text>
+    </g>
+
+    <!-- Área de Escape -->
+    <g transform="translate(450, 30)">
+        <circle cx="40" cy="40" r="30" fill="#FFA500"/>
+        <path d="M 25,35 L 55,35 L 40,50 Z" fill="white"/>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial" font-size="12">Área de Escape</text>
+    </g>
+
+    <!-- Combinação Serra + Distância -->
+    <g transform="translate(550, 30)">
+        <circle cx="40" cy="40" r="30" fill="#FF4444"/>
+        <path d="M 25,30 L 40,50 L 55,30" fill="none" stroke="white" stroke-width="3"/>
+        <text x="40" y="35" fill="white" text-anchor="middle" font-family="Arial" font-size="10">12%</text>
+        <text x="40" y="48" fill="white" text-anchor="middle" font-family="Arial" font-size="10">800m</text>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial" font-size="12">Próx. Escape</text>
+    </g>
+</svg>

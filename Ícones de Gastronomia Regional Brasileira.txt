@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400">
+    <!-- Background -->
+    <rect width="800" height="400" fill="#1E1E1E"/>
+    
+    <!-- Fogão a Lenha -->
+    <g transform="translate(50, 50)">
+        <circle cx="40" cy="40" r="30" fill="#8B4513"/>
+        <rect x="25" y="25" width="30" height="30" fill="#4A2500"/>
+        <path d="M 35,20 L 45,20 L 40,10 Z" fill="#FF4500"/>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial" font-size="12">Fogão a Lenha</text>
+    </g>
+
+    <!-- Café Colonial -->
+    <g transform="translate(150, 50)">
+        <circle cx="40" cy="40" r="30" fill="#DEB887"/>
+        <path d="M 25,35 Q 40,30 55,35 L 55,50 Q 40,45 25,50 Z" fill="#4B2F1C"/>
+        <path d="M 35,25 Q 40,20 45,25" stroke="#4B2F1C" stroke-width="2" fill="none"/>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial" font-size="12">Café Colonial</text>
+    </g>
+
+    <!-- Abacaxi -->
+    <g transform="translate(250, 50)">
+        <circle cx="40" cy="40" r="30" fill="#FFD700"/>
+        <path d="M 40,20 L 40,10 L 45,15 L 40,20" fill="#228B22"/>
+        <path d="M 30,30 L 50,30 M 30,40 L 50,40 M 30,50 L 50,50" stroke="#DAA520" stroke-width="2"/>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial" font-size="12">Abacaxi</text>
+    </g>
+
+    <!-- Pequi -->
+    <g transform="translate(350, 50)">
+        <circle cx="40" cy="40" r="30" fill="#FFA500"/>
+        <circle cx="40" cy="40" r="15" fill="#8B4513"/>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial" font-size="12">Pequi</text>
+    </g>
+
+    <!-- Melancia -->
+    <g transform="translate(50, 200)">
+        <circle cx="40" cy="40" r="30" fill="#FF6B6B"/>
+        <path d="M 20,40 Q 40,45 60,40" stroke="#006400" stroke-width="3" fill="none"/>
+        <circle cx="35" cy="35" r="2" fill="#000"/>
+        <circle cx="45" cy="35" r="2" fill="#000"/>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial" font-size="12">Melancia</text>
+    </g>
+
+    <!-- Frutas -->
+    <g transform="translate(150, 200)">
+        <circle cx="40" cy="40" r="30" fill="#FF4500"/>
+        <circle cx="30" cy="30" r="12" fill="#FF0000"/>
+        <circle cx="50" cy="30" r="12" fill="#FFD700"/>
+        <circle cx="40" cy="50" r="12" fill="#8B0000"/>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial" font-size="12">Frutas</text>
+    </g>
+
+    <!-- Verduras -->
+    <g transform="translate(250, 200)">
+        <circle cx="40" cy="40" r="30" fill="#228B22"/>
+        <path d="M 30,30 Q 40,20 50,30 T 70,30" stroke="#32CD32" stroke-width="3" fill="none"/>
+        <path d="M 30,40 Q 40,30 50,40 T 70,40" stroke="#32CD32" stroke-width="3" fill="none"/>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial" font-size="12">Verduras</text>
+    </g>
+
+    <!-- Comida Caseira -->
+    <g transform="translate(350, 200)">
+        <circle cx="40" cy="40" r="30" fill="#CD853F"/>
+        <path d="M 25,35 L 55,35" stroke="#FFF" stroke-width="3"/>
+        <path d="M 30,45 Q 40,40 50,45" stroke="#FFF" stroke-width="3" fill="none"/>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial" font-size="12">Comida Caseira</text>
+    </g>
+
+    <!-- Peixe -->
+    <g transform="translate(450, 50)">
+        <circle cx="40" cy="40" r="30" fill="#4682B4"/>
+        <path d="M 20,40 Q 40,20 60,40 Q 40,60 20,40" fill="#B0C4DE"/>
+        <circle cx="50" cy="35" r="2" fill="#000"/>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial" font-size="12">Peixe</text>
+    </g>
+
+    <!-- Vinho -->
+    <g transform="translate(450, 200)">
+        <circle cx="40" cy="40" r="30" fill="#8B0000"/>
+        <path d="M 35,25 L 45,25 L 43,45 L 37,45 Z" fill="#FFF"/>
+        <rect x="38" y="45" width="4" height="10" fill="#FFF"/>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial" font-size="12">Vinho</text>
+    </g>
+
+    <!-- Uva -->
+    <g transform="translate(550, 50)">
+        <circle cx="40" cy="40" r="30" fill="#4B0082"/>
+        <circle cx="35" cy="35" r="5" fill="#9400D3"/>
+        <circle cx="45" cy="35" r="5" fill="#9400D3"/>
+        <circle cx="40" cy="45" r="5" fill="#9400D3"/>
+        <path d="M 40,25 L 40,30" stroke="#228B22" stroke-width="2"/>
+        <text x="40" y="90" fill="white" text-anchor="middle" font-family="Arial" font-size="12">Uva</text>
+    </g>
+</svg>

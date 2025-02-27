@@ -1,0 +1,187 @@
+// Sistema de Alertas de Segurança
+// app/src/main/kotlin/com/kingroad/security
+
+class SecurityAlertManager(
+    private val locationService: LocationService,
+    private val alertService: AlertService,
+    private val statisticsService: StatisticsService,
+    private val notificationService: NotificationService
+) {
+    data class SecurityIncident(
+        val type: IncidentType,
+        val location: Location,
+        val timestamp: Long,
+        val details: String,
+        val reportedBy: String,
+        val verifications: Int = 0,
+        val isVerified: Boolean = false
+    )
+
+    enum class IncidentType(val riskLevel: Int) {
+        FUEL_THEFT(3),           // Furto de combustível
+        TIRE_THEFT(4),           // Furto de pneus
+        CARGO_THEFT(4),          // Furto de carga
+        PARTS_THEFT(3),          // Furto de peças
+        ARMED_ROBBERY(5),        // Assalto a mão armada
+        CARGO_ROBBERY(5),        // Roubo de carga/caminhão
+        PERSONAL_ROBBERY(5),     // Roubo de pertences
+        SUSPICIOUS_ACTIVITY(2)    // Atividade suspeita
+    }
+
+    data class RiskZone(
+        val area: Area,
+        val riskLevel: Int,
+        val incidents: List<SecurityIncident>,
+        val recommendations: List<SecurityRecommendation>,
+        val safeSpots: List<SafeSpot>
+    )
+
+    // Monitoramento em tempo real
+    suspend fun startSecurityMonitoring() {
+        locationService.startLocationUpdates { location ->
+            checkSecurityRisks(location)
+        }
+    }
+
+    // Verificar riscos de segurança
+    private suspend fun checkSecurityRisks(location: Location) {
+        val riskZone = getRiskZone(location)
+        
+        if (riskZone != null) {
+            val alerts = generateSecurityAlerts(riskZone)
+            showSecurityAlerts(alerts)
+            
+            // Se estiver em área de alto risco
+            if (riskZone.riskLevel >= 4) {
+                suggestSafeAlternatives(riskZone)
+            }
+        }
+    }
+
+    // Gerar alertas de segurança
+    private suspend fun generateSecurityAlerts(
+        riskZone: RiskZone
+    ): List<SecurityAlert> {
+        val recentIncidents = statisticsService
+            .getRecentIncidents(riskZone.area)
+            .sortedByDescending { it.riskLevel }
+
+        return recentIncidents.map { incident ->
+            SecurityAlert(
+                type = incident.type,
+                location = incident.location,
+                riskLevel = calculateRiskLevel(incident),
+                recommendations = getRecommendations(incident),
+                safeAlternatives = findSafeAlternatives(incident.location)
+            )
+        }
+    }
+
+    // Reportar incidente
+    suspend fun reportIncident(
+        type: IncidentType,
+        location: Location,
+        details: String
+    ) {
+        val incident = SecurityIncident(
+            type = type,
+            location = location,
+            timestamp = System.currentTimeMillis(),
+            details = details,
+            reportedBy = getCurrentUserId()
+        )
+        
+        alertService.saveIncident(incident)
+        updateRiskZone(incident)
+        notifyNearbyDrivers(incident)
+    }
+
+    // Encontrar áreas seguras próximas
+    private suspend fun findSafeAlternatives(
+        location: Location
+    ): List<SafeSpot> {
+        return alertService.findSafeSpots(
+            location = location,
+            radius = 10000.0, // 10km
+            minSecurityLevel = 4
+        )
+    }
+
+    // Validar e verificar incidentes
+    suspend fun verifyIncident(incidentId: String) {
+        val incident = alertService.getIncident(incidentId)
+        incident.verifications++
+        
+        if (incident.verifications >= MIN_VERIFICATIONS) {
+            incident.isVerified = true
+            updateRiskStatistics(incident)
+        }
+        
+        alertService.updateIncident(incident)
+    }
+
+    // Análise estatística
+    private suspend fun updateRiskStatistics(incident: SecurityIncident) {
+        statisticsService.addIncident(incident)
+        statisticsService.updateRiskLevels(incident.location)
+        
+        // Atualizar mapas de calor
+        updateHeatmap(incident)
+    }
+
+    private suspend fun updateHeatmap(incident: SecurityIncident) {
+        val heatmap = statisticsService.getSecurityHeatmap()
+        heatmap.addDataPoint(
+            location = incident.location,
+            intensity = incident.type.riskLevel,
+            radius = HEATMAP_RADIUS
+        )
+    }
+
+    companion object {
+        const val MIN_VERIFICATIONS = 3
+        const val HEATMAP_RADIUS = 5000.0 // metros
+        const val HIGH_RISK_THRESHOLD = 4
+    }
+}
+
+// Classes de suporte
+data class SecurityAlert(
+    val type: IncidentType,
+    val location: Location,
+    val riskLevel: Int,
+    val recommendations: List<SecurityRecommendation>,
+    val safeAlternatives: List<SafeSpot>
+)
+
+data class SecurityRecommendation(
+    val action: String,
+    val priority: Int,
+    val details: String
+)
+
+data class SafeSpot(
+    val location: Location,
+    val type: SafeSpotType,
+    val securityFeatures: List<SecurityFeature>,
+    val rating: Double,
+    val verifiedBy: Int
+)
+
+enum class SafeSpotType {
+    SECURE_PARKING,
+    POLICE_STATION,
+    TRUCK_STOP,
+    GUARDED_AREA,
+    WELL_LIT_AREA
+}
+
+enum class SecurityFeature {
+    CCTV,
+    GUARD,
+    FENCING,
+    LIGHTING,
+    ACCESS_CONTROL,
+    EMERGENCY_BUTTON,
+    POLICE_PROXIMITY
+}

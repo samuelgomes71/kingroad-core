@@ -1,0 +1,122 @@
+import React, { useState } from 'react';
+import { Search, MapPin, Navigation, X, Check } from 'lucide-react';
+
+const IntersectionSearch = () => {
+  const [streetOne, setStreetOne] = useState('');
+  const [streetTwo, setStreetTwo] = useState('');
+  const [city, setCity] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  
+  return (
+    <div className="h-screen bg-[#121212]">
+      {/* Barra superior */}
+      <div className="bg-[#1E1E1E] p-4">
+        <h1 className="text-white text-xl font-bold mb-4">Buscar Cruzamento</h1>
+        
+        {/* Campos de entrada */}
+        <div className="space-y-4">
+          {/* Primeira rua */}
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2">
+              <Search size={20} className="text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Primeira rua"
+              value={streetOne}
+              onChange={(e) => setStreetOne(e.target.value)}
+              className="w-full bg-[#252525] text-gray-200 pl-10 pr-4 py-3 rounded-lg"
+            />
+          </div>
+
+          {/* Segunda rua */}
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2">
+              <Search size={20} className="text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Segunda rua"
+              value={streetTwo}
+              onChange={(e) => setStreetTwo(e.target.value)}
+              className="w-full bg-[#252525] text-gray-200 pl-10 pr-4 py-3 rounded-lg"
+            />
+          </div>
+
+          {/* Cidade */}
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2">
+              <MapPin size={20} className="text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Cidade"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              className="w-full bg-[#252525] text-gray-200 pl-10 pr-4 py-3 rounded-lg"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Sugestões de ruas que se cruzam */}
+      {suggestions.length > 0 && (
+        <div className="p-4 bg-[#252525]">
+          <h2 className="text-gray-200 text-sm mb-2">Ruas que se cruzam:</h2>
+          <div className="space-y-2">
+            {suggestions.map((street, index) => (
+              <div
+                key={index}
+                className="bg-[#1E1E1E] p-3 rounded-lg flex justify-between items-center"
+              >
+                <div className="text-gray-200">{street.name}</div>
+                <button className="p-2 hover:bg-[#303030] rounded-full">
+                  <Check size={16} className="text-blue-400" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Resultados de cruzamentos */}
+      <div className="p-4">
+        <div className="space-y-3">
+          {/* Exemplo de resultado */}
+          <div className="bg-[#1E1E1E] p-4 rounded-lg">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <div className="text-gray-200 font-medium">
+                  Av. Paulista × Rua Augusta
+                </div>
+                <div className="text-sm text-gray-400">São Paulo</div>
+              </div>
+              <div className="flex space-x-2">
+                <button className="p-2 hover:bg-[#252525] rounded-full">
+                  <MapPin size={20} className="text-gray-400" />
+                </button>
+                <button className="p-2 hover:bg-[#252525] rounded-full">
+                  <Navigation size={20} className="text-blue-400" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="text-xs text-gray-500">
+              Cruzamento com semáforo • Estação de metrô próxima
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Botão de busca */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#1E1E1E]">
+        <button className="w-full bg-blue-600 text-white p-4 rounded-lg flex items-center justify-center">
+          <Search size={20} className="mr-2" />
+          Buscar Cruzamento
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default IntersectionSearch;

@@ -1,0 +1,125 @@
+import React from 'react';
+
+const RoadLabel = ({
+  highwayInfo,
+  isExit = false,
+  scale = 1,
+  onClick = () => {}
+}) => {
+  if (!highwayInfo) return null;
+
+  const baseSize = 24; // Tamanho base em pixels
+  
+  return (
+    <div
+      className={`
+        absolute 
+        flex 
+        items-center 
+        justify-center 
+        font-semibold
+        ${isExit ? 'bg-green-600' : 'bg-blue-600'}
+        text-white 
+        rounded-md
+        shadow-md
+        select-none
+        cursor-default
+        z-50
+      `}
+      style={{
+        width: `${baseSize}px`,
+        height: `${baseSize}px`,
+        fontSize: `${12}px`,
+        transform: `scale(${1 / scale})`,
+        transformOrigin: 'center'
+      }}
+      onClick={onClick}
+    >
+      {isExit ? `${highwayInfo.exitNumber}` : formatHighwayNumber(highwayInfo)}
+    </div>
+  );
+};
+
+const RoadLabelSystem = ({ 
+  highways = [],
+  exits = [],
+  mapScale = 1,
+  onLabelClick = () => {}
+}) => {
+  return (
+    <div className="absolute inset-0 pointer-events-none">
+      {/* Números das Rodovias */}
+      {Array.isArray(highways) && highways.map((highway, index) => (
+        <RoadLabel
+          key={`highway-${highway?.id || index}`}
+          highwayInfo={highway}
+          scale={mapScale}
+          onClick={() => onLabelClick(highway)}
+        />
+      ))}
+
+      {/* Números das Saídas */}
+      {Array.isArray(exits) && exits.map((exit, index) => (
+        <RoadLabel
+          key={`exit-${exit?.id || index}`}
+          highwayInfo={exit}
+          isExit={true}
+          scale={mapScale}
+          onClick={() => onLabelClick(exit)}
+        />
+      ))}
+    </div>
+  );
+};
+
+// Funções auxiliares
+const formatHighwayNumber = (highway) => {
+  if (!highway) return '';
+  
+  // Se a rodovia tem número, usa apenas o número
+  if (highway.number) {
+    return highway.prefix ? `${highway.prefix}${highway.number}` : highway.number;
+  }
+  
+  // Se não tem número, usa a sigla/nome curto
+  return highway.shortName || highway.name || '';
+};
+
+// Exemplo de uso:
+const DemoComponent = () => {
+  const sampleData = {
+    highways: [
+      {
+        id: '1',
+        number: '101',
+        prefix: 'US ',
+        name: 'Pacific Coast Highway'
+      },
+      {
+        id: '2',
+        shortName: 'QEW',
+        name: 'Queen Elizabeth Way'
+      }
+    ],
+    exits: [
+      {
+        id: 'exit1',
+        exitNumber: '42',
+        name: 'Downtown Exit'
+      }
+    ]
+  };
+
+  return (
+    <div className="relative w-full h-96 bg-gray-100">
+      <RoadLabelSystem
+        highways={sampleData.highways}
+        exits={sampleData.exits}
+        mapScale={1}
+        onLabelClick={(label) => console.log('Label clicked:', label)}
+      />
+    </div>
+  );
+};
+
+export default RoadLabelSystem;

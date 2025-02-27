@@ -1,0 +1,92 @@
+import React, { useState, useEffect } from 'react';
+import { MapPin, MessageCircle, Truck, Settings, Sun, Moon } from 'lucide-react';
+
+const DarkModeInterface = () => {
+  const [currentTime, setCurrentTime] = useState(new Date());
+  
+  return (
+    <div className="h-screen bg-[#121212] text-gray-200">
+      {/* Barra superior */}
+      <div className="bg-[#1E1E1E] p-4 flex justify-between items-center">
+        <div className="text-xl font-bold">King Road</div>
+        <div className="flex items-center space-x-4">
+          <button className="p-2 rounded-lg bg-[#252525] text-gray-300">
+            {currentTime.getHours() >= 18 ? (
+              <Moon size={20} className="text-yellow-600" />
+            ) : (
+              <Sun size={20} className="text-yellow-500" />
+            )}
+          </button>
+          <Settings size={20} className="text-gray-300" />
+        </div>
+      </div>
+
+      {/* Menu principal */}
+      <div className="p-4 grid grid-cols-2 gap-4">
+        <button className="bg-[#1A4B81] p-6 rounded-lg flex flex-col items-center transition-colors hover:bg-[#1E5A9A]">
+          <Truck size={48} className="mb-2" />
+          <span className="text-lg">Navegação</span>
+        </button>
+
+        <button className="bg-[#1B4D3E] p-6 rounded-lg flex flex-col items-center transition-colors hover:bg-[#205C4A]">
+          <MessageCircle size={48} className="mb-2" />
+          <span className="text-lg">Mensagens</span>
+        </button>
+
+        <button className="bg-[#6B2D2D] p-6 rounded-lg flex flex-col items-center transition-colors hover:bg-[#7A3434]">
+          <MapPin size={48} className="mb-2" />
+          <span className="text-lg">Localização</span>
+        </button>
+
+        <button className="bg-[#5C4D1B] p-6 rounded-lg flex flex-col items-center transition-colors hover:bg-[#6B5A20]">
+          <Settings size={48} className="mb-2" />
+          <span className="text-lg">Configurações</span>
+        </button>
+      </div>
+
+      {/* Área de conteúdo */}
+      <div className="p-4">
+        <div className="bg-[#1E1E1E] rounded-lg p-4">
+          <h2 className="text-lg font-semibold mb-4">Atualizações</h2>
+          
+          {/* Exemplo de card de atualização */}
+          <div className="bg-[#252525] p-3 rounded-lg mb-3">
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-[#1A4B81] rounded-full"></div>
+              <span className="text-gray-300">Tráfego moderado na A1</span>
+            </div>
+            <span className="text-sm text-gray-500 ml-5">Há 5 minutos</span>
+          </div>
+
+          <div className="bg-[#252525] p-3 rounded-lg">
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-[#1B4D3E] rounded-full"></div>
+              <span className="text-gray-300">Área de descanso próxima</span>
+            </div>
+            <span className="text-sm text-gray-500 ml-5">2km à frente</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Barra de navegação inferior */}
+      <div className="fixed bottom-0 left-0 right-0 bg-[#1E1E1E] p-4">
+        <div className="flex justify-around">
+          <button className="p-2 rounded-full bg-[#252525] text-gray-300">
+            <Truck size={24} />
+          </button>
+          <button className="p-2 rounded-full bg-[#252525] text-gray-300">
+            <MessageCircle size={24} />
+          </button>
+          <button className="p-2 rounded-full bg-[#252525] text-gray-300">
+            <MapPin size={24} />
+          </button>
+          <button className="p-2 rounded-full bg-[#252525] text-gray-300">
+            <Settings size={24} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DarkModeInterface;

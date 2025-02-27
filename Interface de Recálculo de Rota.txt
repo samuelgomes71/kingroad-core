@@ -1,0 +1,100 @@
+import React, { useState } from 'react';
+import { AlertTriangle, Map, ArrowRight, Check, Clock } from 'lucide-react';
+
+const ReroutingInterface = () => {
+  const [recalculatingRoute, setRecalculatingRoute] = useState(true);
+  
+  return (
+    <div className="h-screen bg-[#121212]">
+      {/* Alerta de desvio */}
+      <div className="bg-[#6B2D2D] p-4">
+        <div className="flex items-center space-x-3">
+          <AlertTriangle size={24} className="text-red-300" />
+          <div>
+            <h2 className="text-lg font-bold text-red-100">Desvio Detectado</h2>
+            <p className="text-red-200">Calculando rota segura para caminhões</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Status do recálculo */}
+      <div className="p-4 bg-[#1E1E1E]">
+        <div className="flex items-center space-x-4 text-gray-300">
+          <Clock size={20} />
+          <span>Tempo estimado para nova rota: 3 min</span>
+        </div>
+      </div>
+
+      {/* Informações de segurança */}
+      <div className="p-4">
+        <div className="bg-[#1A4B81] rounded-lg p-4 mb-4">
+          <h3 className="text-lg font-bold text-blue-100 mb-2">Análise de Segurança</h3>
+          <div className="space-y-2">
+            <div className="flex items-center text-blue-200">
+              <Check size={20} className="mr-2" />
+              Verificando restrições de altura
+            </div>
+            <div className="flex items-center text-blue-200">
+              <Check size={20} className="mr-2" />
+              Identificando vias adequadas para caminhões
+            </div>
+            <div className="flex items-center text-blue-200">
+              <Check size={20} className="mr-2" />
+              Evitando áreas residenciais
+            </div>
+          </div>
+        </div>
+
+        {/* Resumo da nova rota */}
+        <div className="bg-[#252525] rounded-lg p-4">
+          <h3 className="text-lg font-bold text-gray-200 mb-3">Nova Rota Sugerida</h3>
+          
+          <div className="space-y-4">
+            <div className="flex items-center text-gray-300">
+              <div className="w-8 h-8 rounded-full bg-[#1A4B81] flex items-center justify-center mr-3">
+                <Map size={20} />
+              </div>
+              <div>
+                <div className="font-medium">Via principal mais próxima</div>
+                <div className="text-sm text-gray-400">2.5 km - Avenida Principal</div>
+              </div>
+            </div>
+
+            <div className="flex items-center text-gray-300">
+              <ArrowRight size={20} className="mx-4" />
+              <div>
+                <div className="font-medium">Retorno seguro</div>
+                <div className="text-sm text-gray-400">5.8 km - Trevo Industrial</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 p-3 bg-[#1E1E1E] rounded">
+            <div className="text-gray-300 mb-1">Informações da rota:</div>
+            <div className="text-sm text-gray-400">
+              • Altura mínima: 4.5m
+              <br />
+              • Largura da via: Adequada para caminhões
+              <br />
+              • Sem restrições de circulação
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Botões de ação */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#1E1E1E]">
+        <div className="flex space-x-4">
+          <button className="flex-1 bg-[#1A4B81] text-white p-4 rounded-lg font-medium">
+            Seguir Nova Rota
+          </button>
+          <button className="flex-1 bg-[#252525] text-gray-300 p-4 rounded-lg font-medium">
+            Opções Alternativas
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ReroutingInterface;

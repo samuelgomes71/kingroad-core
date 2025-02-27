@@ -1,0 +1,124 @@
+import React, { useState, useEffect } from 'react';
+import { Copy, CheckCircle, AlertCircle, Share2 } from 'lucide-react';
+
+const KRIDInterface = () => {
+  const [krid, setKrid] = useState('');
+  const [isValid, setIsValid] = useState(false);
+  const [copied, setCopied] = useState(false);
+  
+  // Formata o KRID enquanto o usuário digita
+  const formatKRID = (input: string) => {
+    const cleaned = input.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    
+    if (cleaned.length <= 2) return cleaned;
+    
+    // Separa o código do país
+    const countryCode = cleaned.substring(0, 2);
+    const numbers = cleaned.substring(2);
+    
+    // Formata os números em grupos de 4
+    const formatted = numbers.match(/.{1,4}/g)?.join(' ') || numbers;
+    
+    return `${countryCode} ${formatted}`;
+  };
+  
+  const handleKRIDChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatKRID(e.target.value);
+    setKrid(formatted);
+    validateKRID(formatted);
+  };
+  
+  const validateKRID = (value: string) => {
+    // Implementar validação real
+    const isValidFormat = /^[A-Z]{2}(\s\d{4})*$/.test(value);
+    setIsValid(isValidFormat);
+  };
+  
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(krid);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  
+  return (
+    <div className="max-w-md mx-auto p-6">
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <h2 className="text-2xl font-bold mb-6">King Road ID (KRID)</h2>
+        
+        {/* Campo de entrada do KRID */}
+        <div className="space-y-4">
+          <label className="block">
+            <span className="text-gray-700">Seu KRID</span>
+            <input
+              type="text"
+              value={krid}
+              onChange={handleKRIDChange}
+              className="mt-1 block w-full p-3 border rounded-lg text-lg font-mono"
+              placeholder="XX 0000 0000 0000"
+            />
+          </label>
+          
+          {/* Status de validação */}
+          <div className="flex items-center space-x-2">
+            {isValid ? (
+              <CheckCircle className="text-green-500" size={20} />
+            ) : (
+              <AlertCircle className="text-red-500" size={20} />
+            )}
+            <span className={isValid ? "text-green-600" : "text-red-600"}>
+              {isValid ? "KRID válido" : "KRID inválido"}
+            </span>
+          </div>
+        </div>
+        
+        {/* Botões de ação */}
+        <div className="mt-6 flex space-x-4">
+          <button
+            onClick={copyToClipboard}
+            className="flex-1 flex items-center justify-center space-x-2 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            {copied ? (
+              <>
+                <CheckCircle size={20} />
+                <span>Copiado!</span>
+              </>
+            ) : (
+              <>
+                <Copy size={20} />
+                <span>Copiar KRID</span>
+              </>
+            )}
+          </button>
+          
+          <button className="flex items-center justify-center p-3 bg-gray-100 rounded-lg hover:bg-gray-200">
+            <Share2 size={20} className="text-gray-600" />
+          </button>
+        </div>
+        
+        {/* Cartão de visualização */}
+        {isValid && (
+          <div className="mt-6 border rounded-lg p-4 bg-gray-50">
+            <div className="text-sm text-gray-600 mb-2">Seu cartão KRID</div>
+            <div className="font-mono text-xl">{krid}</div>
+            <div className="mt-2 text-sm text-gray-500">
+              Use este ID para identificação em emergências
+            </div>
+          </div>
+        )}
+        
+        {/* Informações de ajuda */}
+        <div className="mt-6 text-sm text-gray-600">
+          <h3 className="font-semibold mb-2">Sobre o KRID</h3>
+          <ul className="space-y-1">
+            <li>• Começa com o código do país (2 letras)</li>
+            <li>• Seguido por grupos de 4 números</li>
+            <li>• Fácil de comunicar em emergências</li>
+            <li>• Único para cada usuário</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default KRIDInterface;

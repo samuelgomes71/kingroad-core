@@ -1,0 +1,115 @@
+import React, { useState, useEffect } from 'react';
+import { Mic, Send, Play, Pause, Check, X, MessageSquare, Settings } from 'lucide-react';
+
+const SMSAudioInterface = () => {
+  const [isRecording, setIsRecording] = useState(false);
+  const [convertedText, setConvertedText] = useState('');
+  const [isDrivingMode, setIsDrivingMode] = useState(false);
+  const [messages, setMessages] = useState([]);
+  
+  return (
+    <div className="h-screen bg-gray-100">
+      {/* Barra superior com status */}
+      <div className="bg-blue-700 p-4 flex justify-between items-center">
+        <div className="text-white text-xl font-bold">Mensagens</div>
+        <div className="flex items-center space-x-4">
+          {isDrivingMode && (
+            <span className="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm">
+              Modo Direção
+            </span>
+          )}
+          <Settings className="text-white cursor-pointer" size={24} />
+        </div>
+      </div>
+
+      {/* Lista de mensagens */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.map((message, index) => (
+          <div
+            key={index}
+            className="bg-white rounded-lg shadow p-4 flex items-start justify-between"
+          >
+            <div className="flex-1">
+              <div className="flex items-center space-x-2 mb-2">
+                <MessageSquare size={20} className="text-blue-600" />
+                <span className="font-medium">{message.sender}</span>
+              </div>
+              <p className="text-gray-700">{message.text}</p>
+              <span className="text-sm text-gray-500">{message.time}</span>
+            </div>
+            <button className="p-2 hover:bg-gray-100 rounded-full">
+              <Play size={20} className="text-blue-600" />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Área de entrada/gravação */}
+      <div className="bg-white border-t p-4">
+        {isDrivingMode ? (
+          // Interface modo direção
+          <button
+            onTouchStart={() => setIsRecording(true)}
+            onTouchEnd={() => setIsRecording(false)}
+            className={`w-full p-6 rounded-lg flex flex-col items-center ${
+              isRecording ? 'bg-red-100' : 'bg-blue-100'
+            }`}
+          >
+            <Mic
+              size={48}
+              className={isRecording ? 'text-red-600' : 'text-blue-600'}
+            />
+            <span className="mt-2 font-medium">
+              {isRecording ? 'Gravando...' : 'Pressione para falar'}
+            </span>
+          </button>
+        ) : (
+          // Interface normal
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setIsRecording(!isRecording)}
+              className={`p-4 rounded-full ${
+                isRecording ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'
+              }`}
+            >
+              <Mic size={24} />
+            </button>
+            <input
+              type="text"
+              placeholder="Digite uma mensagem..."
+              className="flex-1 border rounded-full px-4 py-2"
+            />
+            <button className="p-4 bg-blue-600 text-white rounded-full">
+              <Send size={24} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Preview de mensagem convertida */}
+      {convertedText && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg w-full max-w-md p-6">
+            <h3 className="text-lg font-bold mb-4">Confirmar Mensagem</h3>
+            <p className="text-gray-700 mb-6">{convertedText}</p>
+            <div className="flex space-x-4">
+              <button
+                onClick={() => setConvertedText('')}
+                className="flex-1 py-2 border border-gray-300 rounded-lg flex items-center justify-center space-x-2"
+              >
+                <X size={20} />
+                <span>Cancelar</span>
+              </button>
+              <button className="flex-1 py-2 bg-blue-600 text-white rounded-lg flex items-center justify-center space-x-2">
+                <Check size={20} />
+                <span>Enviar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default SMSAudioInterface;

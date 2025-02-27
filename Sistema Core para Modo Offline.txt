@@ -1,0 +1,178 @@
+// OfflineManager.kt
+class OfflineManager(
+    private val mapStorage: MapStorageService,
+    private val databaseService: LocalDatabaseService,
+    private val locationService: LocationService
+) {
+    data class OfflineArea(
+        val id: String,
+        val name: String,
+        val bounds: LatLngBounds,
+        val downloadSize: Long,
+        val lastUpdate: Long? = null,
+        val status: DownloadStatus = DownloadStatus.NOT_DOWNLOADED
+    )
+
+    enum class DownloadStatus {
+        NOT_DOWNLOADED,
+        DOWNLOADING,
+        DOWNLOADED,
+        UPDATE_AVAILABLE,
+        ERROR
+    }
+
+    data class OfflineMapData(
+        val mapTiles: List<MapTile>,
+        val roadNetwork: RoadNetwork,
+        val poiDatabase: POIDatabase,
+        val restrictions: VehicleRestrictions
+    )
+
+    // Gerenciar downloads
+    suspend fun downloadOfflineArea(area: OfflineArea): Flow<DownloadProgress> = flow {
+        try {
+            // 1. Download dos tiles do mapa
+            val mapTiles = mapStorage.downloadMapTiles(area.bounds)
+            emit(DownloadProgress(0.25f, "Map tiles downloaded"))
+
+            // 2. Download da rede viária
+            val roadNetwork = mapStorage.downloadRoadNetwork(area.bounds)
+            emit(DownloadProgress(0.50f, "Road network downloaded"))
+
+            // 3. Download dos POIs
+            val pois = mapStorage.downloadPOIs(area.bounds)
+            emit(DownloadProgress(0.75f, "POIs downloaded"))
+
+            // 4. Download das restrições
+            val restrictions = mapStorage.downloadRestrictions(area.bounds)
+            emit(DownloadProgress(1.0f, "Restrictions downloaded"))
+
+            // Salvar tudo no banco local
+            databaseService.saveOfflineData(
+                areaId = area.id,
+                mapData = OfflineMapData(
+                    mapTiles = mapTiles,
+                    roadNetwork = roadNetwork,
+                    poiDatabase = pois,
+                    restrictions = restrictions
+                )
+            )
+
+        } catch (e: Exception) {
+            emit(DownloadProgress(-1f, "Error: ${e.message}"))
+        }
+    }
+
+    // Verificar atualizações
+    suspend fun checkForUpdates(area: OfflineArea): Boolean {
+        return mapStorage.hasUpdates(area.id)
+    }
+
+    // Calcular rota offline
+    suspend fun calculateOfflineRoute(
+        start: Location,
+        end: Location,
+        vehicleProfile: VehicleProfile
+    ): Route {
+        val roadNetwork = databaseService.loadRoadNetwork()
+        val restrictions = databaseService.loadRestrictions()
+
+        return RouteCalculator.calculateRoute(
+            start = start,
+            end = end,
+            roadNetwork = roadNetwork,
+            restrictions = restrictions,
+            vehicleProfile = vehicleProfile
+        )
+    }
+
+    // Buscar POIs offline
+    suspend fun searchOfflinePOIs(
+        location: Location,
+        radius: Double,
+        types: List<POIType>
+    ): List<POI> {
+        return databaseService.searchPOIs(
+            location = location,
+            radius = radius,
+            types = types
+        )
+    }
+
+    // Gerenciar espaço
+    suspend fun getStorageInfo(): StorageInfo {
+        val usedSpace = databaseService.calculateUsedSpace()
+        val availableSpace = mapStorage.getAvailableSpace()
+
+        return StorageInfo(
+            used = usedSpace,
+            available = availableSpace,
+            maps = databaseService.getOfflineMapsList()
+        )
+    }
+
+    companion object {
+        const val MIN_OFFLINE_AREA = 100.0 // km²
+        const val MAX_OFFLINE_AREA = 5000.0 // km²
+        const val MIN_FREE_SPACE = 1024L * 1024L * 1024L // 1GB
+    }
+}
+
+// LocalDatabaseService.kt
+interface LocalDatabaseService {
+    // Tabelas principais
+    @Entity
+    data class MapTile(
+        @PrimaryKey val id: String,
+        val zoom: Int,
+        val data: ByteArray,
+        val timestamp: Long
+    )
+
+    @Entity
+    data class RoadSegment(
+        @PrimaryKey val id: String,
+        val startPoint: Location,
+        val endPoint: Location,
+        val type: RoadType,
+        val restrictions: List<Restriction>,
+        val properties: Map<String, Any>
+    )
+
+    @Entity
+    data class POIEntity(
+        @PrimaryKey val id: String,
+        val location: Location,
+        val type: POIType,
+        val properties: Map<String, Any>,
+        val lastUpdate: Long
+    )
+
+    // Operações CRUD
+    suspend fun saveMapTiles(tiles: List<MapTile>)
+    suspend fun loadMapTile(id: String): MapTile?
+    suspend fun saveRoadNetwork(segments: List<RoadSegment>)
+    suspend fun loadRoadSegments(bounds: LatLngBounds): List<RoadSegment>
+    suspend fun savePOIs(pois: List<POIEntity>)
+    suspend fun searchPOIs(location: Location, radius: Double, types: List<POIType>): List<POI>
+    
+    // Gerenciamento de espaço
+    suspend fun calculateUsedSpace(): Long
+    suspend fun clearOldData(before: Long)
+    suspend fun getOfflineMapsList(): List<OfflineArea>
+}
+
+// LocationService.kt
+interface LocationService {
+    fun getLocationUpdates(): Flow<Location>
+    suspend fun getLastKnownLocation(): Location?
+    fun startNavigationTracking()
+    fun stopNavigationTracking()
+    
+    data class NavigationState(
+        val location: Location,
+        val bearing: Float,
+        val speed: Float,
+        val accuracy: Float
+    )
+}
