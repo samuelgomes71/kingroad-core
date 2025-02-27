@@ -1,0 +1,232 @@
+
+    useCount: 0
+  };
+
+  // Menu de Estradas Preferidas
+  const PreferredRoadsMenu = () => (
+    <div className="absolute right-0 top-0 h-screen w-80 bg-gray-900 p-4 shadow-lg">
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h2 className="text-xl font-bold text-white">Estradas Verificadas</h2>
+          <p className="text-sm text-gray-400">Rotas serão otimizadas por estas estradas</p>
+        </div>
+        <button onClick={() => setShowPreferredMenu(false)} className="text-gray-400">
+          <X size={20} />
+        </button>
+      </div>
+      
+      <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-100px)]">
+        {preferredRoads.map((road) => (
+          <div key={road.id} className="bg-gray-800 p-4 rounded-lg">
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <div className="flex items-center space-x-2">
+                  <Star className="text-yellow-500" size={16} />
+                  <h3 className="text-white font-medium">{road.name}</h3>
+                </div>
+                <p className="text-sm text-gray-400 mt-1">
+                  Última utilização: {road.lastUsed ? new Date(road.lastUsed).toLocaleDateString() : 'Nunca'}
+                </p>
+                {road.notes && (
+                  <p className="text-sm text-gray-300 mt-2 bg-gray-700 p-2 rounded">
+                    {road.notes}
+                  </p>
+                )}
+                <div className="flex items-center mt-2 space-x-2">
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    road.quality === 'boa' ? 'bg-green-900 text-green-300' :
+                    road.quality === 'regular' ? 'bg-yellow-900 text-yellow-300' :
+                    'bg-gray-700 text-gray-300'
+                  }`}>
+                    {road.quality || 'Não avaliada'}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    Utilizada {road.useCount} vezes
+                  </span>
+                </div>
+              </div>
+              <button 
+                onClick={() => removePreferredRoad(road.id)}
+                className="text-gray-400 hover:text-gray-300 ml-2"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            
+            {road.facilities.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-gray-700">
+                <div className="flex flex-wrap gap-2">
+                  {road.facilities.map((facility, index) => (
+                    <span key={index} className="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded">
+                      {facility}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <button 
+        onClick={() => setShowConfirmDialog(true)}
+        className="fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+      >
+        <Check size={16} />
+        <span>Adicionar Estrada</span>
+      </button>
+    </div>
+  );
+
+  // Diálogo para adicionar estrada
+  const AddRoadDialog = () => (
+    <Alert className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 bg-gray-900 border-blue-600">
+      <Star className="text-blue-600" />
+      <AlertTitle className="text-white">Adicionar Estrada Verificada</AlertTitle>
+      <AlertDescription>
+        <div className="space-y-4 mt-4">
+          <div>
+            <label className="text-gray-300 text-sm">Nome da Estrada</label>
+            <input 
+              type="text"
+              className="w-full mt-1 bg-gray-800 text-white rounded p-2"
+              value={currentRoad?.name || ''}
+              onChange={(e) => setCurrentRoad({...currentRoad, name: e.target.value})}
+            />
+          </div>
+          
+          <div>
+            <label className="text-gray-300 text-sm">Qualidade da Estrada</label>
+            <select 
+              className="w-full mt-1 bg-gray-800 text-white rounded p-2"
+              value={currentRoad?.quality || ''}
+              onChange={(e) => setCurrentRoad({...currentRoad, quality: e.target.value})}
+            >
+              <option value="">Selecione...</option>
+              <option value="boa">Boa</option>
+              <option value="regular">Regular</option>
+              <option value="ruim">Ruim</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-gray-300 text-sm">Notas (opcional)</label>
+            <textarea 
+              className="w-full mt-1 bg-gray-800 text-white rounded p-2"
+              rows="3"
+              value={currentRoad?.notes || ''}
+              onChange={(e) => setCurrentRoad({...currentRoad, notes: e.target.value})}
+            />
+          </div>
+
+          <div>
+            <label className="text-gray-300 text-sm">Facilidades Disponíveis</label>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {['Posto', 'Restaurante', 'Hotel', 'Oficina'].map((facility) => (
+                <button
+                  key={facility}
+                  onClick={() => toggleFacility(facility)}
+                  className={`px-3 py-1 rounded text-sm ${
+                    currentRoad?.facilities?.includes(facility)
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-700 text-gray-300'
+                  }`}
+                >
+                  {facility}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end space-x-3">
+          <button 
+            onClick={() => setShowConfirmDialog(false)}
+            className="px-4 py-2 bg-gray-700 rounded text-white"
+          >
+            Cancelar
+          </button>
+          <button 
+            onClick={addPreferredRoad}
+            className="px-4 py-2 bg-blue-600 rounded text-white"
+          >
+            Adicionar
+          </button>
+        </div>
+      </AlertDescription>
+    </Alert>
+  );
+
+  // Botão flutuante do menu
+  const MenuButton = () => (
+    <button 
+      onClick={() => setShowPreferredMenu(true)}
+      className="fixed bottom-20 right-4 w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center shadow-lg"
+    >
+      <Star className="text-white" />
+    </button>
+  );
+
+  // Toggle facilidade
+  const toggleFacility = (facility) => {
+    if (!currentRoad) return;
+    
+    const facilities = currentRoad.facilities || [];
+    const newFacilities = facilities.includes(facility)
+      ? facilities.filter(f => f !== facility)
+      : [...facilities, facility];
+    
+    setCurrentRoad({...currentRoad, facilities: newFacilities});
+  };
+
+  // Adicionar estrada preferida
+  const addPreferredRoad = () => {
+    if (!currentRoad?.name) return;
+
+    const newRoad = {
+      ...PreferredRoadData,
+      ...currentRoad,
+      id: Date.now().toString(),
+      dateAdded: new Date(),
+      useCount: 0
+    };
+
+    setPreferredRoads([...preferredRoads, newRoad]);
+    setShowConfirmDialog(false);
+    setCurrentRoad(null);
+  };
+
+  // Remover estrada preferida
+  const removePreferredRoad = (roadId) => {
+    setPreferredRoads(preferredRoads.filter(road => road.id !== roadId));
+  };
+
+  // Atualizar contagem de uso
+  const updateRoadUsage = (roadId) => {
+    setPreferredRoads(preferredRoads.map(road => {
+      if (road.id === roadId) {
+        return {
+          ...road,
+          useCount: road.useCount + 1,
+          lastUsed: new Date()
+        };
+      }
+      return road;
+    }));
+  };
+
+  return (
+    <div className="relative">
+      {/* Menu de estradas preferidas */}
+      {showPreferredMenu && <PreferredRoadsMenu />}
+
+      {/* Diálogo de adição */}
+      {showConfirmDialog && <AddRoadDialog />}
+
+      {/* Botão do menu */}
+      <MenuButton />
+    </div>
+  );
+};
+
+export default PreferredRoadsSystem;

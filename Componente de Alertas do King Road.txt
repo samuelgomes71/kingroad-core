@@ -1,0 +1,253 @@
+import React, { useState, useEffect } from 'react';
+
+const AlertTriangle = ({ type = 'warning', message = '', subMessage = '', onClose, fullScreen = false, autoClose = 0 }) => {
+  const [visible, setVisible] = useState(true);
+  
+  // Cores baseadas no tipo de alerta
+  const colors = {
+    warning: {
+      background: '#ffee00',
+      triangle: '#111111',
+      symbol: '#ffee00',
+      text: '#111111'
+    },
+    danger: {
+      background: '#ff5500',
+      triangle: '#331111',
+      symbol: '#ff5500',
+      text: '#ffffff'
+    },
+    custom: {
+      background: '#3366ff',
+      triangle: '#112244',
+      symbol: '#3366ff',
+      text: '#ffffff'
+    }
+  };
+  
+  const selectedColors = colors[type] || colors.warning;
+  
+  // Auto-fechar alerta após tempo definido
+  useEffect(() => {
+    if (autoClose > 0 && visible) {
+      const timer = setTimeout(() => {
+        setVisible(false);
+        if (onClose) onClose();
+      }, autoClose);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [autoClose, visible, onClose]);
+  
+  // Manipulador de fechamento
+  const handleClose = () => {
+    setVisible(false);
+    if (onClose) onClose();
+  };
+  
+  if (!visible) return null;
+  
+  return (
+    <div 
+      className={`fixed z-50 ${fullScreen ? 'inset-0' : 'top-0 left-0 right-0'}`}
+      style={{ 
+        backgroundColor: selectedColors.background,
+        boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)'
+      }}
+    >
+      <div className={`flex flex-col items-center justify-center ${fullScreen ? 'h-screen' : 'py-6'}`}>
+        {/* Triângulo de alerta */}
+        <div className="relative" style={{ width: fullScreen ? '200px' : '100px', height: fullScreen ? '200px' : '100px' }}>
+          <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
+            {/* Triângulo */}
+            <path 
+              d="M50,10 L90,90 L10,90 Z" 
+              fill={selectedColors.triangle} 
+            />
+            
+            {/* Símbolo de exclamação */}
+            <path 
+              d="M50,30 L50,60 L50,60 Z" 
+              fill={selectedColors.symbol} 
+              stroke={selectedColors.symbol} 
+              strokeWidth="10" 
+              strokeLinecap="round" 
+            />
+            <circle 
+              cx="50" 
+              cy="75" 
+              r="5" 
+              fill={selectedColors.symbol} 
+            />
+          </svg>
+        </div>
+        
+        {/* Mensagem principal */}
+        {message && (
+          <div 
+            className={`text-center mt-4 font-bold ${fullScreen ? 'text-3xl' : 'text-xl'}`}
+            style={{ color: selectedColors.text }}
+          >
+            {message}
+          </div>
+        )}
+        
+        {/* Submensagem */}
+        {subMessage && (
+          <div 
+            className={`text-center mt-2 ${fullScreen ? 'text-xl' : 'text-base'}`}
+            style={{ color: selectedColors.text }}
+          >
+            {subMessage}
+          </div>
+        )}
+        
+        {/* Botão de fechamento */}
+        {!fullScreen && (
+          <button 
+            onClick={handleClose}
+            className="absolute top-3 right-3 text-2xl"
+            style={{ color: selectedColors.text }}
+          >
+            &times;
+          </button>
+        )}
+        
+        {/* Botão de OK em alertas de tela cheia */}
+        {fullScreen && (
+          <button
+            onClick={handleClose}
+            className="mt-6 px-8 py-3 rounded-lg font-bold text-lg"
+            style={{ 
+              backgroundColor: selectedColors.triangle,
+              color: selectedColors.background
+            }}
+          >
+            OK
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const AlertDemo = () => {
+  const [showAlerts, setShowAlerts] = useState({
+    warning: false,
+    danger: false,
+    fullScreenWarning: false,
+    fullScreenDanger: false,
+    custom: false
+  });
+  
+  return (
+    <div className="p-6 bg-gray-900 text-white min-h-screen">
+      <h1 className="text-2xl font-bold mb-6">King Road - Sistema de Alertas</h1>
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+        <button 
+          onClick={() => setShowAlerts({...showAlerts, warning: true})}
+          className="p-4 bg-yellow-500 text-black rounded-lg font-bold hover:bg-yellow-400"
+        >
+          Mostrar Alerta Amarelo
+        </button>
+        
+        <button 
+          onClick={() => setShowAlerts({...showAlerts, danger: true})}
+          className="p-4 bg-red-600 text-white rounded-lg font-bold hover:bg-red-500"
+        >
+          Mostrar Alerta Vermelho
+        </button>
+        
+        <button 
+          onClick={() => setShowAlerts({...showAlerts, fullScreenWarning: true})}
+          className="p-4 bg-yellow-500 text-black rounded-lg font-bold hover:bg-yellow-400"
+        >
+          Alerta Amarelo (Tela Cheia)
+        </button>
+        
+        <button 
+          onClick={() => setShowAlerts({...showAlerts, fullScreenDanger: true})}
+          className="p-4 bg-red-600 text-white rounded-lg font-bold hover:bg-red-500"
+        >
+          Alerta Vermelho (Tela Cheia)
+        </button>
+        
+        <button 
+          onClick={() => setShowAlerts({...showAlerts, custom: true})}
+          className="p-4 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-500"
+        >
+          Alerta Personalizado
+        </button>
+      </div>
+      
+      {/* Exemplos de uso de alertas */}
+      {showAlerts.warning && (
+        <AlertTriangle 
+          type="warning" 
+          message="ATENÇÃO!"
+          subMessage="Redução de velocidade à frente"
+          onClose={() => setShowAlerts({...showAlerts, warning: false})}
+          autoClose={5000}
+        />
+      )}
+      
+      {showAlerts.danger && (
+        <AlertTriangle 
+          type="danger" 
+          message="PERIGO!"
+          subMessage="Curva acentuada, reduza a velocidade"
+          onClose={() => setShowAlerts({...showAlerts, danger: false})}
+        />
+      )}
+      
+      {showAlerts.fullScreenWarning && (
+        <AlertTriangle 
+          type="warning" 
+          message="ATENÇÃO! TRECHO EM OBRAS"
+          subMessage="Limite de velocidade: 40 km/h"
+          onClose={() => setShowAlerts({...showAlerts, fullScreenWarning: false})}
+          fullScreen={true}
+        />
+      )}
+      
+      {showAlerts.fullScreenDanger && (
+        <AlertTriangle 
+          type="danger" 
+          message="PERIGO! SERRA ÍNGREME"
+          subMessage="Use marcha reduzida. 80% dos acidentes neste trecho são causados por falha nos freios."
+          onClose={() => setShowAlerts({...showAlerts, fullScreenDanger: false})}
+          fullScreen={true}
+        />
+      )}
+      
+      {showAlerts.custom && (
+        <AlertTriangle 
+          type="custom" 
+          message="VEÍCULO CARREGADO?"
+          subMessage="Selecione para receber instruções específicas de segurança"
+          onClose={() => setShowAlerts({...showAlerts, custom: false})}
+          fullScreen={true}
+        />
+      )}
+      
+      <div className="mt-8 p-4 bg-gray-800 rounded-lg">
+        <h2 className="text-xl font-bold mb-4">Instruções de Uso</h2>
+        <p className="mb-2">Os triângulos de alerta do King Road podem ser usados em diversas situações:</p>
+        <ul className="list-disc pl-6 space-y-2">
+          <li><span className="text-yellow-400 font-bold">Amarelo</span>: Para alertas de atenção e avisos gerais</li>
+          <li><span className="text-red-500 font-bold">Vermelho</span>: Para alertas críticos e situações de perigo</li>
+          <li><span className="text-blue-400 font-bold">Personalizado</span>: Para outras necessidades específicas</li>
+        </ul>
+        <p className="mt-4">Os alertas podem ser configurados como:</p>
+        <ul className="list-disc pl-6 space-y-2">
+          <li>Notificações na parte superior da tela</li>
+          <li>Alertas de tela cheia para informações críticas</li>
+          <li>Com fechamento automático ou manual</li>
+        </ul>
+      </div>
+    </div>
+  );
+};
+
+export default AlertDemo;

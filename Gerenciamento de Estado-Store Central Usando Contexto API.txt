@@ -1,0 +1,28 @@
+// Store central (usando Context API)
+import React, { createContext, useContext, useState } from 'react';
+
+const AppContext = createContext();
+
+export const AppProvider = ({ children }) => {
+  const [mapData, setMapData] = useState(null);
+  const [userPreferences, setUserPreferences] = useState(null);
+  const [offlineData, setOfflineData] = useState({
+    blockedRoads: [],
+    preferredRoads: [],
+    truckStops: [],
+    trafficSigns: []
+  });
+
+  return (
+    <AppContext.Provider value={{
+      mapData,
+      setMapData,
+      userPreferences,
+      setUserPreferences,
+      offlineData,
+      setOfflineData
+    }}>
+      {children}
+    </AppContext.Provider>
+  );
+};

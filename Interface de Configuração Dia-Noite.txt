@@ -1,0 +1,109 @@
+import React, { useState, useEffect } from 'react';
+import { Sun, Moon, Settings, RefreshCw } from 'lucide-react';
+
+const DayNightSettings = ({
+  currentMode,
+  isDayMode,
+  onModeChange,
+  onToggle
+}) => {
+  return (
+    <div className="bg-gray-900 text-gray-100">
+      {/* Cabeçalho */}
+      <div className="p-4 border-b border-gray-800">
+        <h2 className="text-xl font-bold">Modo Dia/Noite</h2>
+      </div>
+
+      {/* Opções principais */}
+      <div className="p-4 space-y-4">
+        {/* Status atual */}
+        <div className="bg-gray-800 p-4 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              {isDayMode ? (
+                <Sun size={24} className="text-yellow-400" />
+              ) : (
+                <Moon size={24} className="text-blue-400" />
+              )}
+              <span className="font-medium">
+                {isDayMode ? "Modo Dia" : "Modo Noite"}
+              </span>
+            </div>
+            <button 
+              onClick={onToggle}
+              className="p-2 bg-gray-700 rounded-lg hover:bg-gray-600"
+            >
+              Alternar
+            </button>
+          </div>
+        </div>
+
+        {/* Seleção de modo */}
+        <div className="space-y-2">
+          {/* Automático */}
+          <button 
+            className={`w-full p-4 rounded-lg flex items-center justify-between ${
+              currentMode === 'AUTO' 
+                ? 'bg-blue-600' 
+                : 'bg-gray-800'
+            }`}
+            onClick={() => onModeChange('AUTO')}
+          >
+            <div className="flex items-center space-x-3">
+              <RefreshCw size={20} />
+              <span>Automático (GPS)</span>
+            </div>
+            {currentMode === 'AUTO' && (
+              <div className="text-sm opacity-75">
+                Ativo
+              </div>
+            )}
+          </button>
+
+          {/* Manual */}
+          <button 
+            className={`w-full p-4 rounded-lg flex items-center justify-between ${
+              currentMode === 'MANUAL' 
+                ? 'bg-blue-600' 
+                : 'bg-gray-800'
+            }`}
+            onClick={() => onModeChange('MANUAL')}
+          >
+            <div className="flex items-center space-x-3">
+              <Settings size={20} />
+              <span>Manual</span>
+            </div>
+            {currentMode === 'MANUAL' && (
+              <div className="text-sm opacity-75">
+                Ativo
+              </div>
+            )}
+          </button>
+        </div>
+
+        {/* Informações */}
+        <div className="mt-6 p-4 bg-gray-800 rounded-lg">
+          <h3 className="font-medium mb-2">Informações</h3>
+          <div className="space-y-2 text-sm text-gray-400">
+            <p>• Modo automático usa sua localização GPS para determinar se é dia ou noite</p>
+            <p>• Modo manual permite alternar livremente entre dia e noite</p>
+            <p>• Alterações afetam apenas as cores do mapa e interface</p>
+          </div>
+        </div>
+      </div>
+
+      {currentMode === 'AUTO' && (
+        <div className="p-4 bg-gray-800 mt-4">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-400">Próxima mudança automática</span>
+            <span className="font-medium">
+              {isDayMode ? "Anoitecer" : "Amanhecer"}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default DayNightSettings;

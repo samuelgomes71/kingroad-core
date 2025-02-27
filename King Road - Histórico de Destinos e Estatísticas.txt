@@ -1,0 +1,535 @@
+// King Road - Sistema de Histórico de Destinos
+// Este módulo permite guardar informações sobre destinos visitados,
+// incluindo estatísticas, características e histórico de visitas
+
+/**
+ * Base de dados para armazenar destinos e informações relacionadas
+ */
+class DestinationDatabase {
+  constructor() {
+    this.destinations = [];
+    this.currentId = 1;
+  }
+
+  // Carregar dados (em uma implementação real, viria do armazenamento persistente)
+  loadData() {
+    // Exemplos de destinos pré-populados
+    const mockDestinations = [
+      {
+        id: this.currentId++,
+        name: "Centro de Distribuição Mercadona",
+        address: "Calle de la Industria, 45, 28108 Alcobendas, Madrid, Espanha",
+        coordinates: { lat: 40.5487, lng: -3.6430 },
+        favorite: true,
+        visits: [
+          { 
+            arrival: new Date('2023-12-15T08:30:00'), 
+            departure: new Date('2023-12-15T11:45:00'),
+            loadingTime: 195, // minutos
+            notes: "Fila longa. Levar todos os documentos em duplicata."
+          },
+          { 
+            arrival: new Date('2024-01-22T09:15:00'), 
+            departure: new Date('2024-01-22T10:30:00'),
+            loadingTime: 75,
+            notes: "Processo mais rápido desta vez. Novo gerente."
+          }
+        ],
+        facilities: {
+          hasRestroom: true,
+          hasShower: false,
+          hasTruckParking: true,
+          allowsOvernight: false,
+          easyAccess: true
+        },
+        notes: "Entrada pela lateral. Documentação rigorosa. Equipe profissional."
+      },
+      {
+        id: this.currentId++,
+        name: "Lidl Centro Logístico",
+        address: "Carretera de Villaverde a Vallecas, 265, 28031 Madrid, Espanha",
+        coordinates: { lat: 40.3491, lng: -3.6011 },
+        favorite: false,
+        visits: [
+          { 
+            arrival: new Date('2023-11-05T14:20:00'), 
+            departure: new Date('2023-11-05T18:45:00'),
+            loadingTime: 265,
+            notes: "Atraso na descarga devido a problema no sistema."
+          },
+          { 
+            arrival: new Date('2024-02-10T07:30:00'), 
+            departure: new Date('2024-02-10T12:15:00'),
+            loadingTime: 285,
+            notes: "Muito movimento. Processo lento."
+          }
+        ],
+        facilities: {
+          hasRestroom: true,
+          hasShower: true,
+          hasTruckParking: true,
+          allowsOvernight: true,
+          easyAccess: false
+        },
+        notes: "Requer manobras difíceis para estacionar. Boas instalações para motoristas."
+      },
+      {
+        id: this.currentId++,
+        name: "Porto de Valência Terminal de Contêineres",
+        address: "Av. Muelle del Turia, s/n, 46024 València, Valência, Espanha",
+        coordinates: { lat: 39.4500, lng: -0.3333 },
+        favorite: true,
+        visits: [
+          { 
+            arrival: new Date('2024-01-18T06:45:00'), 
+            departure: new Date('2024-01-18T14:30:00'),
+            loadingTime: 465,
+            notes: "Processo de alfândega muito demorado."
+          }
+        ],
+        facilities: {
+          hasRestroom: true,
+          hasShower: true,
+          hasTruckParking: true,
+          allowsOvernight: true,
+          easyAccess: true
+        },
+        notes: "Necessário documentação de alfândega. Boas instalações, mas processos demorados."
+      }
+    ];
+    
+    this.destinations = mockDestinations;
+    return this.destinations;
+  }
+
+  // Obter todos os destinos
+  getAllDestinations() {
+    return [...this.destinations];
+  }
+
+  // Adicionar novo destino
+  addDestination(destinationData) {
+    const newDestination = {
+      id: this.currentId++,
+      ...destinationData,
+      visits: [],
+      favorite: false
+    };
+    
+    this.destinations.push(newDestination);
+    return newDestination;
+  }
+
+  // Atualizar destino existente
+  updateDestination(id, updatedData) {
+    const index = this.destinations.findIndex(dest => dest.id === id);
+    if (index === -1) return null;
+    
+    this.destinations[index] = {
+      ...this.destinations[index],
+      ...updatedData
+    };
+    
+    return this.destinations[index];
+  }
+
+  // Excluir destino
+  deleteDestination(id) {
+    const index = this.destinations.findIndex(dest => dest.id === id);
+    if (index === -1) return false;
+    
+    this.destinations.splice(index, 1);
+    return true;
+  }
+
+  // Alternar status de favorito
+  toggleFavorite(id) {
+    const destination = this.destinations.find(dest => dest.id === id);
+    if (!destination) return null;
+    
+    destination.favorite = !destination.favorite;
+    return destination;
+  }
+
+  // Adicionar nova visita a um destino
+  addVisit(destinationId, visitData) {
+    const destination = this.destinations.find(dest => dest.id === destinationId);
+    if (!destination) return null;
+    
+    // Calcular o tempo de carregamento/descarregamento em minutos
+    const arrivalTime = new Date(visitData.arrival);
+    const departureTime = new Date(visitData.departure);
+    const loadingTime = Math.round((departureTime - arrivalTime) / (1000 * 60));
+    
+    const visit = {
+      arrival: arrivalTime,
+      departure: departureTime,
+      loadingTime,
+      notes: visitData.notes || ""
+    };
+    
+    destination.visits.push(visit);
+    return visit;
+  }
+
+  // Buscar destinos
+  searchDestinations(searchTerm, filters = {}) {
+    if (!searchTerm && Object.keys(filters).length === 0) {
+      return this.getAllDestinations();
+    }
+    
+    return this.destinations.filter(dest => {
+      // Aplicar termo de busca
+      const matchesSearch = !searchTerm || 
+        dest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        dest.address.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      if (!matchesSearch) return false;
+      
+      // Aplicar filtros de facilidades
+      for (const [key, value] of Object.entries(filters)) {
+        if (value !== null && dest.facilities[key] !== value) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  }
+
+  // Obter estatísticas de um destino
+  getDestinationStats(destinationId) {
+    const destination = this.destinations.find(dest => dest.id === destinationId);
+    if (!destination) return null;
+    
+    const visits = destination.visits;
+    
+    // Calcular tempo médio de carregamento/descarregamento
+    let avgLoadingTime = 0;
+    if (visits.length > 0) {
+      avgLoadingTime = visits.reduce((sum, visit) => sum + visit.loadingTime, 0) / visits.length;
+    }
+    
+    // Obter data da última visita
+    let lastVisitDate = null;
+    if (visits.length > 0) {
+      lastVisitDate = new Date(Math.max(...visits.map(visit => visit.arrival.getTime())));
+    }
+    
+    return {
+      totalVisits: visits.length,
+      avgLoadingTime,
+      lastVisitDate,
+      facilities: destination.facilities
+    };
+  }
+}
+
+/**
+ * Gerenciador de Histórico de Destinos
+ * Responsável por integrar a lógica de destinos ao King Road
+ */
+class DestinationHistoryManager {
+  constructor(kingRoadApp) {
+    this.database = new DestinationDatabase();
+    this.kingRoadApp = kingRoadApp;
+    this.database.loadData();
+  }
+
+  // Inicializar o gerenciador
+  initialize() {
+    // Integrar com o sistema de navegação para detectar chegadas e partidas
+    // Em uma implementação real, isso seria conectado a eventos GPS
+    console.log("Sistema de Histórico de Destinos inicializado");
+    console.log(`${this.database.destinations.length} destinos carregados`);
+  }
+
+  // Notificação de chegada em um destino
+  notifyArrival(coordinates, name = null) {
+    // Verificar se é um destino conhecido
+    let destination = this.findNearbyDestination(coordinates);
+    const isNewDestination = !destination;
+    
+    // Se não for um destino conhecido, perguntar se deseja salvá-lo
+    if (isNewDestination && name) {
+      // Em uma implementação real, isso mostraria um diálogo na UI
+      console.log(`Novo destino detectado: ${name}`);
+      
+      // Simulação da criação de um novo destino
+      destination = this.database.addDestination({
+        name,
+        coordinates,
+        address: "Endereço a ser determinado", // Em uma implementação real, usaria geocodificação reversa
+        facilities: {
+          hasRestroom: null,
+          hasShower: null,
+          hasTruckParking: null,
+          allowsOvernight: null,
+          easyAccess: null
+        }
+      });
+      
+      console.log("Solicitando informações sobre as instalações do local...");
+      this.promptForFacilityInfo(destination.id);
+    }
+    
+    // Registrar a chegada
+    if (destination) {
+      this.recordArrival(destination.id);
+      console.log(`Chegada registrada em: ${destination.name}`);
+    }
+  }
+
+  // Notificação de partida de um destino
+  notifyDeparture(coordinates) {
+    // Verificar se estávamos em um destino conhecido
+    const destination = this.findNearbyDestination(coordinates);
+    
+    if (destination) {
+      // Verificar se há uma chegada sem saída correspondente
+      const pendingVisit = this.getPendingVisit(destination.id);
+      
+      if (pendingVisit) {
+        this.recordDeparture(destination.id);
+        console.log(`Partida registrada de: ${destination.name}`);
+        
+        // Solicitar feedback sobre o local
+        this.promptForVisitFeedback(destination.id);
+      }
+    }
+  }
+
+  // Encontrar destino próximo às coordenadas atuais
+  findNearbyDestination(coordinates, radiusInMeters = 100) {
+    // Em uma implementação real, isso usaria cálculos de distância geográfica
+    // Simulação simplificada
+    return this.database.destinations.find(dest => 
+      this.isCoordinateNearby(coordinates, dest.coordinates, radiusInMeters)
+    );
+  }
+
+  // Verificar se duas coordenadas estão próximas (simulação)
+  isCoordinateNearby(coord1, coord2, radiusInMeters) {
+    // Implementação simplificada - em uma implementação real, usaria a fórmula de Haversine
+    const latDiff = Math.abs(coord1.lat - coord2.lat);
+    const lngDiff = Math.abs(coord1.lng - coord2.lng);
+    
+    // Muito simplificado - 0.001 grau ≈ 111 metros no equador
+    const approxDistanceInDegrees = radiusInMeters / 111000;
+    
+    return latDiff < approxDistanceInDegrees && lngDiff < approxDistanceInDegrees;
+  }
+
+  // Registrar chegada a um destino
+  recordArrival(destinationId) {
+    const destination = this.database.destinations.find(d => d.id === destinationId);
+    if (!destination) return false;
+    
+    // Em uma implementação real, isso seria armazenado temporariamente
+    // até que uma partida seja registrada
+    destination.pendingVisit = {
+      arrival: new Date()
+    };
+    
+    return true;
+  }
+
+  // Registrar partida de um destino
+  recordDeparture(destinationId) {
+    const destination = this.database.destinations.find(d => d.id === destinationId);
+    if (!destination || !destination.pendingVisit) return false;
+    
+    const visitData = {
+      arrival: destination.pendingVisit.arrival,
+      departure: new Date(),
+      notes: ""
+    };
+    
+    this.database.addVisit(destinationId, visitData);
+    delete destination.pendingVisit;
+    
+    return true;
+  }
+
+  // Obter visita pendente (chegada sem partida)
+  getPendingVisit(destinationId) {
+    const destination = this.database.destinations.find(d => d.id === destinationId);
+    return destination ? destination.pendingVisit : null;
+  }
+
+  // Solicitar informações sobre as instalações do local
+  promptForFacilityInfo(destinationId) {
+    // Em uma implementação real, isso mostraria um diálogo na UI
+    console.log(`Solicitando informações sobre instalações do destino #${destinationId}`);
+    
+    // Simulação de resposta
+    const facilityUpdate = {
+      facilities: {
+        hasRestroom: true,
+        hasShower: false,
+        hasTruckParking: true,
+        allowsOvernight: false,
+        easyAccess: true
+      }
+    };
+    
+    this.database.updateDestination(destinationId, facilityUpdate);
+  }
+
+  // Solicitar feedback sobre a visita
+  promptForVisitFeedback(destinationId) {
+    // Em uma implementação real, isso mostraria um diálogo na UI
+    console.log(`Solicitando feedback sobre a visita ao destino #${destinationId}`);
+    
+    // Simulação de feedback
+    const lastVisitIndex = this.database.destinations.find(d => d.id === destinationId).visits.length - 1;
+    
+    if (lastVisitIndex >= 0) {
+      const destination = this.database.destinations.find(d => d.id === destinationId);
+      destination.visits[lastVisitIndex].notes = "Local organizado, processo rápido.";
+    }
+  }
+
+  // Criar rota para um destino existente
+  createRouteToDestination(destinationId) {
+    const destination = this.database.destinations.find(d => d.id === destinationId);
+    if (!destination) return false;
+    
+    // Em uma implementação real, isso integraria com o módulo de navegação
+    console.log(`Criando rota para: ${destination.name}`);
+    
+    // Mostrar estatísticas da última visita
+    const stats = this.database.getDestinationStats(destinationId);
+    if (stats.totalVisits > 0) {
+      console.log(`Última visita: ${stats.lastVisitDate.toLocaleString()}`);
+      console.log(`Tempo médio no local: ${this.formatDuration(stats.avgLoadingTime)}`);
+    }
+    
+    // Mostrar informações sobre as instalações
+    this.showFacilitiesAlert(destination);
+    
+    return true;
+  }
+
+  // Mostrar alerta sobre as instalações do destino
+  showFacilitiesAlert(destination) {
+    // Em uma implementação real, isso mostraria um alerta na UI
+    console.log("=== Informações do Destino ===");
+    console.log(`Banheiros: ${destination.facilities.hasRestroom ? "Sim" : "Não"}`);
+    console.log(`Duchas: ${destination.facilities.hasShower ? "Sim" : "Não"}`);
+    console.log(`Estacionamento para caminhões: ${destination.facilities.hasTruckParking ? "Sim" : "Não"}`);
+    console.log(`Pernoite permitido: ${destination.facilities.allowsOvernight ? "Sim" : "Não"}`);
+    console.log(`Acesso facilitado: ${destination.facilities.easyAccess ? "Sim" : "Não"}`);
+    console.log("=============================");
+  }
+
+  // Formatar duração em minutos para formato legível
+  formatDuration(minutes) {
+    if (minutes < 60) {
+      return `${Math.round(minutes)} minutos`;
+    }
+    
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = Math.round(minutes % 60);
+    
+    if (remainingMinutes === 0) {
+      return `${hours} hora${hours > 1 ? 's' : ''}`;
+    }
+    
+    return `${hours}h ${remainingMinutes}min`;
+  }
+
+  // Buscar destinos com filtros
+  searchDestinations(query, filters) {
+    return this.database.searchDestinations(query, filters);
+  }
+
+  // Obter todos os destinos
+  getAllDestinations() {
+    return this.database.getAllDestinations();
+  }
+
+  // Obter destinos favoritos
+  getFavoriteDestinations() {
+    return this.database.getAllDestinations().filter(d => d.favorite);
+  }
+
+  // Iniciar navegação para um destino
+  navigateToDestination(destinationId) {
+    const destination = this.database.destinations.find(d => d.id === destinationId);
+    if (!destination) return false;
+    
+    // Mostrar alerta com informações do destino
+    this.showDestinationAlert(destination);
+    
+    // Em uma implementação real, isso integraria com o módulo de navegação
+    console.log(`Iniciando navegação para: ${destination.name}`);
+    
+    return true;
+  }
+
+  // Mostrar alerta com informações do destino
+  showDestinationAlert(destination) {
+    // Em uma implementação real, isso mostraria um alerta na UI
+    const stats = this.database.getDestinationStats(destination.id);
+    
+    console.log("=== Alerta de Navegação ===");
+    console.log(`Destino: ${destination.name}`);
+    
+    if (stats.totalVisits > 0) {
+      console.log(`Última visita: ${stats.lastVisitDate.toLocaleString()}`);
+      console.log(`Tempo médio: ${this.formatDuration(stats.avgLoadingTime)}`);
+    } else {
+      console.log("Primeira visita a este destino");
+    }
+    
+    // Mostrar informações sobre as instalações
+    this.showFacilitiesAlert(destination);
+  }
+}
+
+// Exportar a classe para uso no aplicativo King Road
+// Usando uma abordagem mais compatível com diferentes ambientes
+const KingRoadDestinations = {
+  DestinationHistoryManager,
+  DestinationDatabase
+};
+
+// Exemplo de uso (para testes)
+function demoDestinationSystem() {
+  const destinationManager = new DestinationHistoryManager({
+    /* simulação do objeto KingRoad */
+  });
+  
+  destinationManager.initialize();
+  
+  // Simulação de chegada a um destino conhecido
+  console.log("\n=== Simulação de Chegada ===");
+  destinationManager.notifyArrival({ lat: 40.5487, lng: -3.6430 });
+  
+  // Simulação de partida de um destino
+  console.log("\n=== Simulação de Partida ===");
+  setTimeout(() => {
+    destinationManager.notifyDeparture({ lat: 40.5487, lng: -3.6430 });
+  }, 1000);
+  
+  // Simulação de busca e filtragem
+  console.log("\n=== Simulação de Busca ===");
+  setTimeout(() => {
+    const results = destinationManager.searchDestinations("Madrid", { 
+      hasRestroom: true,
+      allowsOvernight: true
+    });
+    console.log(`Resultados encontrados: ${results.length}`);
+    console.log(results.map(r => r.name));
+  }, 2000);
+  
+  // Simulação de criação de rota para destino conhecido
+  console.log("\n=== Simulação de Rota ===");
+  setTimeout(() => {
+    destinationManager.createRouteToDestination(1);
+  }, 3000);
+}
+
+// Descomentar para executar a demonstração
+// demoDestinationSystem();

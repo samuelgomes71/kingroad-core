@@ -1,0 +1,484 @@
+import React, { useState, useEffect } from 'react';
+import { Volume2, User, Upload, Settings, Check, X, Clock, Camera, AlertTriangle, Image, HelpCircle } from 'lucide-react';
+
+const EmotionalVoiceSystem = () => {
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [selectedVoice, setSelectedVoice] = useState('esposa');
+  const [speedThreshold, setSpeedThreshold] = useState(80);
+  const [commandDistance, setCommandDistance] = useState(10);
+  const [stopSlideshow, setStopSlideshow] = useState(2);
+  const [currentTab, setCurrentTab] = useState('vozes');
+  const [showDemo, setShowDemo] = useState(false);
+  const [demoState, setDemoState] = useState({
+    speed: 85,
+    distanceToNextCommand: 15,
+    showing: 'slideshow'
+  });
+  
+  // Dados simulados de vozes cadastradas
+  const vozes = [
+    { id: 'proprio', name: 'Minha Voz', status: 'active', samples: 12, lastUpdated: '12/02/2024' },
+    { id: 'esposa', name: 'Ana (Esposa)', status: 'active', samples: 15, lastUpdated: '20/01/2024' },
+    { id: 'filho', name: 'Pedro (Filho)', status: 'active', samples: 8, lastUpdated: '15/01/2024' },
+    { id: 'filha', name: 'Júlia (Filha)', status: 'active', samples: 10, lastUpdated: '15/01/2024' },
+    { id: 'mae', name: 'Maria (Mãe)', status: 'active', samples: 7, lastUpdated: '05/01/2024' },
+    { id: 'amigo', name: 'Carlos (Amigo)', status: 'pending', samples: 3, lastUpdated: '10/02/2024' }
+  ];
+  
+  // Dados simulados de pastas de fotos
+  const fotos = [
+    { id: 'minhas', name: 'Fotos Minhas', count: 5, lastUpdated: '12/02/2024' },
+    { id: 'esposa', name: 'Fotos Ana (Esposa)', count: 24, lastUpdated: '20/01/2024' },
+    { id: 'filho', name: 'Fotos Pedro (Filho)', count: 18, lastUpdated: '15/01/2024' },
+    { id: 'filha', name: 'Fotos Júlia (Filha)', count: 21, lastUpdated: '15/01/2024' },
+    { id: 'mae', name: 'Fotos Maria (Mãe)', count: 12, lastUpdated: '05/01/2024' },
+    { id: 'irmao', name: 'Fotos José (Irmão)', count: 7, lastUpdated: '06/01/2024' },
+    { id: 'diversas', name: 'Fotos Diversas', count: 35, lastUpdated: '10/02/2024' }
+  ];
+  
+  // Exemplos de instruções de navegação para demonstração
+  const instrucoes = [
+    { text: "Vire à direita em 500 metros" },
+    { text: "Siga em frente por 2 quilômetros" },
+    { text: "Pegue a terceira saída na rotatória" },
+    { text: "Atenção! Reduza a velocidade nesta curva" },
+    { text: "Mantenha-se na pista da direita" }
+  ];
+  
+  // Mensagens de alerta personalizadas baseadas em velocidade e condições
+  const alertas = [
+    { condition: "velocity_high", voice: "filho", text: "Papai, vai mais devagar, você está indo muito rápido!" },
+    { condition: "velocity_high", voice: "esposa", text: "Amor, reduza a velocidade por favor, pense em nós..." },
+    { condition: "velocity_high", voice: "mae", text: "Filho, você está correndo demais, me preocupo com você!" },
+    { condition: "dangerous_area", voice: "filho", text: "Papai, essa serra é perigosa, tenha cuidado!" },
+    { condition: "dangerous_area", voice: "esposa", text: "Essa área é conhecida por acidentes, dirija com mais cuidado!" },
+    { condition: "night_driving", voice: "filha", text: "Pai, está escuro, precisa ter mais atenção na estrada!" },
+    { condition: "rain", voice: "esposa", text: "A estrada está molhada, diminua a velocidade, querido!" }
+  ];
+  
+  // Simulação de demonstração
+  useEffect(() => {
+    if (showDemo) {
+      const interval = setInterval(() => {
+        // Simular mudanças nas condições da viagem
+        setDemoState(prev => {
+          const newSpeed = Math.max(75, Math.min(110, prev.speed + (Math.random() > 0.5 ? 5 : -5)));
+          const newDistance = prev.distanceToNextCommand > 1 ? 
+                             prev.distanceToNextCommand - 0.5 : 
+                             15;
+          
+          // Determinar o que mostrar com base nas condições
+          let showing = 'navigation';
+          
+          if (newSpeed >= speedThreshold && newDistance >= commandDistance) {
+            showing = 'slideshow';
+          }
+          
+          if (newDistance <= stopSlideshow) {
+            showing = 'navigation';
+          }
+          
+          // Aleatoriamente mostrar um alerta baseado na velocidade
+          if (newSpeed > 100 && Math.random() > 0.7) {
+            showing = 'alert';
+          }
+          
+          return {
+            speed: newSpeed,
+            distanceToNextCommand: newDistance,
+            showing: showing
+          };
+        });
+      }, 2000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [showDemo, speedThreshold, commandDistance, stopSlideshow]);
+  
+  // Componente para demonstração do sistema em ação
+  const DemoDisplay = () => {
+    const getAlertMessage = () => {
+      const speedAlerts = alertas.filter(a => a.condition === "velocity_high" && a.voice === selectedVoice);
+      if (speedAlerts.length > 0) {
+        return speedAlerts[0];
+      }
+      return alertas[0];
+    };
+    
+    return (
+      <div className="mb-6 border rounded-lg overflow-hidden border-gray-700">
+        <div className="bg-gray-700 p-2 flex justify-between items-center">
+          <span className="font-medium">Demonstração</span>
+          <button 
+            onClick={() => setShowDemo(false)}
+            className="text-gray-400 hover:text-white"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        
+        <div className="p-4">
+          <div className="flex justify-between mb-4">
+            <div className="text-center">
+              <div className="text-sm text-gray-400">Velocidade</div>
+              <div className={`text-xl font-bold ${demoState.speed > 90 ? 'text-red-500' : 'text-green-500'}`}>
+                {demoState.speed} km/h
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <div className="text-sm text-gray-400">Próximo comando</div>
+              <div className="text-xl font-bold">
+                {demoState.distanceToNextCommand.toFixed(1)} km
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-black rounded-lg aspect-video overflow-hidden relative">
+            {demoState.showing === 'slideshow' && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <img 
+                    src="/api/placeholder/350/200" 
+                    alt="Foto familiar" 
+                    className="rounded-lg mb-3 mx-auto"
+                  />
+                  <div className="bg-black bg-opacity-50 p-2 rounded">
+                    <span className="text-sm text-white">Foto da pasta: {selectedVoice}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {demoState.showing === 'navigation' && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-white text-2xl font-bold">Navegação</div>
+                  <div className="text-gray-300 mt-2">
+                    Siga em frente por {demoState.distanceToNextCommand.toFixed(1)} km
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {demoState.showing === 'alert' && (
+              <div className="absolute inset-0 flex items-center justify-center bg-red-500 bg-opacity-50">
+                <div className="text-center p-4">
+                  <AlertTriangle size={48} className="text-white mx-auto mb-3" />
+                  <div className="text-white text-xl font-bold">
+                    {getAlertMessage().text}
+                  </div>
+                  <div className="mt-2 text-white opacity-80">
+                    Voz: {vozes.find(v => v.id === selectedVoice)?.name || selectedVoice}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="mt-4 text-sm text-gray-400 italic">
+            O sistema alterna automaticamente entre navegação, slideshow de fotos, e alertas de segurança baseados na velocidade e proximidade do próximo comando.
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className={`${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'} min-h-screen p-4`}>
+      {/* Cabeçalho */}
+      <div className="flex items-center justify-between mb-6 border-b border-gray-700 pb-3">
+        <div className="flex items-center">
+          <Volume2 className="w-6 h-6 mr-2 text-blue-500" />
+          <h1 className="text-xl font-bold">King Road - Sistema de Vozes e Fotos</h1>
+        </div>
+      </div>
+      
+      {/* Abas */}
+      <div className="flex border-b border-gray-700 mb-4">
+        <button 
+          className={`px-4 py-2 font-medium ${currentTab === 'vozes' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-400'}`}
+          onClick={() => setCurrentTab('vozes')}
+        >
+          Vozes
+        </button>
+        <button 
+          className={`px-4 py-2 font-medium ${currentTab === 'fotos' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-400'}`}
+          onClick={() => setCurrentTab('fotos')}
+        >
+          Fotos
+        </button>
+        <button 
+          className={`px-4 py-2 font-medium ${currentTab === 'configuracoes' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-400'}`}
+          onClick={() => setCurrentTab('configuracoes')}
+        >
+          Configurações
+        </button>
+      </div>
+      
+      {/* Botão de demonstração */}
+      <div className="mb-4">
+        <button 
+          className={`px-4 py-2 rounded-lg font-medium ${showDemo ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} text-white transition-colors`}
+          onClick={() => setShowDemo(!showDemo)}
+        >
+          {showDemo ? 'Parar Demonstração' : 'Ver Demonstração'}
+        </button>
+      </div>
+      
+      {/* Área de demonstração */}
+      {showDemo && <DemoDisplay />}
+      
+      {/* Conteúdo da aba Vozes */}
+      {currentTab === 'vozes' && (
+        <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg p-4 mb-4`}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium">Vozes para Navegação</h2>
+            <button className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm">
+              <Upload size={16} className="inline mr-1" />
+              Adicionar Nova Voz
+            </button>
+          </div>
+          
+          <div className="space-y-3">
+            {vozes.map(voz => (
+              <div 
+                key={voz.id}
+                className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} ${selectedVoice === voz.id ? 'border-2 border-blue-500' : ''}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <User className="w-5 h-5 mr-2 text-gray-400" />
+                    <div>
+                      <p className="font-medium">{voz.name}</p>
+                      <p className="text-xs text-gray-400">
+                        {voz.samples} amostras de áudio • Atualizado: {voz.lastUpdated}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    {voz.status === 'pending' ? (
+                      <span className="text-xs bg-yellow-600/30 text-yellow-400 px-2 py-1 rounded mr-2">
+                        Processando
+                      </span>
+                    ) : (
+                      <span className="text-xs bg-green-600/30 text-green-400 px-2 py-1 rounded mr-2">
+                        Ativa
+                      </span>
+                    )}
+                    <button 
+                      className={`px-3 py-1 rounded text-sm ${selectedVoice === voz.id ? 'bg-blue-600 text-white' : 'bg-gray-600 text-gray-200'}`}
+                      onClick={() => setSelectedVoice(voz.id)}
+                    >
+                      {selectedVoice === voz.id ? 'Selecionada' : 'Selecionar'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="mt-6 border-t border-gray-700 pt-4">
+            <h3 className="text-md font-medium mb-3">Instruções de Gravação</h3>
+            <p className="text-sm mb-3">
+              Para melhores resultados, grave as seguintes frases em um ambiente silencioso:
+            </p>
+            <ul className="text-sm space-y-2 mb-4">
+              {instrucoes.map((instrucao, index) => (
+                <li key={index} className="flex items-start">
+                  <span className="text-gray-400 mr-2">{index + 1}.</span>
+                  <span>"{instrucao.text}"</span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-sm text-gray-400">
+              Quanto mais frases gravar, melhor será a qualidade da voz sintetizada.
+            </p>
+          </div>
+        </div>
+      )}
+      
+      {/* Conteúdo da aba Fotos */}
+      {currentTab === 'fotos' && (
+        <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg p-4 mb-4`}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium">Pastas de Fotos</h2>
+            <button className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm">
+              <Image size={16} className="inline mr-1" />
+              Nova Pasta
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {fotos.map(pasta => (
+              <div 
+                key={pasta.id}
+                className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-12 h-12 rounded bg-gray-600 flex items-center justify-center mr-3">
+                      <Camera className="w-6 h-6 text-gray-300" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{pasta.name}</p>
+                      <p className="text-xs text-gray-400">
+                        {pasta.count} fotos • Atualizado: {pasta.lastUpdated}
+                      </p>
+                    </div>
+                  </div>
+                  <button className="p-2 text-blue-400 hover:text-blue-300">
+                    <Settings size={18} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="mt-6 border-t border-gray-700 pt-4">
+            <h3 className="text-md font-medium mb-3">Diretrizes para Fotos</h3>
+            <ul className="text-sm space-y-2">
+              <li className="flex items-start">
+                <Check size={16} className="text-green-500 mr-2 mt-1 flex-shrink-0" />
+                <span>Escolha fotos claras e bem iluminadas que evoquem emoções positivas</span>
+              </li>
+              <li className="flex items-start">
+                <Check size={16} className="text-green-500 mr-2 mt-1 flex-shrink-0" />
+                <span>Inclua fotos de momentos especiais em família que motivem direção segura</span>
+              </li>
+              <li className="flex items-start">
+                <Check size={16} className="text-green-500 mr-2 mt-1 flex-shrink-0" />
+                <span>Adicione fotos recentes para maior impacto emocional</span>
+              </li>
+              <li className="flex items-start">
+                <X size={16} className="text-red-500 mr-2 mt-1 flex-shrink-0" />
+                <span>Evite fotos que possam distrair excessivamente durante a condução</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      )}
+      
+      {/* Conteúdo da aba Configurações */}
+      {currentTab === 'configuracoes' && (
+        <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg p-4 mb-4`}>
+          <h2 className="text-lg font-medium mb-4">Configurações do Sistema</h2>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block mb-2 text-sm font-medium">
+                Limiar de Velocidade para Mostrar Fotos
+              </label>
+              <div className="flex items-center">
+                <input 
+                  type="range" 
+                  min="50" 
+                  max="120" 
+                  value={speedThreshold}
+                  onChange={(e) => setSpeedThreshold(parseInt(e.target.value))}
+                  className="w-full h-2 rounded-lg appearance-none bg-gray-700 cursor-pointer"
+                />
+                <span className="ml-3 w-12 text-center">{speedThreshold} km/h</span>
+              </div>
+              <p className="mt-1 text-xs text-gray-400">
+                Fotos serão mostradas apenas quando a velocidade for igual ou superior a este valor.
+              </p>
+            </div>
+            
+            <div>
+              <label className="block mb-2 text-sm font-medium">
+                Distância Mínima até o Próximo Comando
+              </label>
+              <div className="flex items-center">
+                <input 
+                  type="range" 
+                  min="5" 
+                  max="20" 
+                  value={commandDistance}
+                  onChange={(e) => setCommandDistance(parseInt(e.target.value))}
+                  className="w-full h-2 rounded-lg appearance-none bg-gray-700 cursor-pointer"
+                />
+                <span className="ml-3 w-12 text-center">{commandDistance} km</span>
+              </div>
+              <p className="mt-1 text-xs text-gray-400">
+                Fotos serão mostradas apenas quando o próximo comando de navegação estiver a esta distância ou mais.
+              </p>
+            </div>
+            
+            <div>
+              <label className="block mb-2 text-sm font-medium">
+                Parar Slideshow Antes do Comando
+              </label>
+              <div className="flex items-center">
+                <input 
+                  type="range" 
+                  min="1" 
+                  max="5" 
+                  value={stopSlideshow}
+                  onChange={(e) => setStopSlideshow(parseInt(e.target.value))}
+                  className="w-full h-2 rounded-lg appearance-none bg-gray-700 cursor-pointer"
+                />
+                <span className="ml-3 w-12 text-center">{stopSlideshow} km</span>
+              </div>
+              <p className="mt-1 text-xs text-gray-400">
+                O slideshow de fotos será interrompido quando estiver a esta distância do próximo comando.
+              </p>
+            </div>
+            
+            <div className="pt-4 border-t border-gray-700">
+              <h3 className="text-md font-medium mb-3">Vozes para Alertas de Segurança</h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-2 rounded hover:bg-gray-700">
+                  <span className="text-sm">Alertas de excesso de velocidade</span>
+                  <select className="bg-gray-600 border-gray-500 rounded p-1 text-sm">
+                    <option>Voz da Esposa</option>
+                    <option>Voz do Filho</option>
+                    <option>Voz da Mãe</option>
+                    <option>Minha Voz</option>
+                  </select>
+                </div>
+                
+                <div className="flex items-center justify-between p-2 rounded hover:bg-gray-700">
+                  <span className="text-sm">Alertas de áreas perigosas</span>
+                  <select className="bg-gray-600 border-gray-500 rounded p-1 text-sm">
+                    <option>Voz do Filho</option>
+                    <option>Voz da Esposa</option>
+                    <option>Voz da Mãe</option>
+                    <option>Minha Voz</option>
+                  </select>
+                </div>
+                
+                <div className="flex items-center justify-between p-2 rounded hover:bg-gray-700">
+                  <span className="text-sm">Alertas de chuva/condições adversas</span>
+                  <select className="bg-gray-600 border-gray-500 rounded p-1 text-sm">
+                    <option>Voz da Mãe</option>
+                    <option>Voz da Esposa</option>
+                    <option>Voz do Filho</option>
+                    <option>Minha Voz</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-6 p-3 bg-blue-900/30 rounded-lg text-sm">
+            <div className="flex items-start">
+              <HelpCircle size={18} className="text-blue-400 mr-2 mt-0.5 flex-shrink-0" />
+              <p>
+                As configurações acima controlam quando e como as fotos e vozes familiares serão utilizadas durante a navegação. Ajuste-as de acordo com sua preferência para maximizar o impacto emocional sem comprometer a segurança.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Rodapé com mensagem informativa */}
+      <div className="mt-6 text-sm text-gray-500 text-center">
+        <p>King Road - Sistema de Segurança Familiar Beta</p>
+        <p className="mt-1">Ajudando motoristas brasileiros a voltarem seguros para casa.</p>
+      </div>
+    </div>
+  );
+};
+
+export default EmotionalVoiceSystem;

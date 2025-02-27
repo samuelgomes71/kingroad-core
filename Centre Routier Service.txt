@@ -1,0 +1,139 @@
+data class CentreRoutier(
+    val id: String,
+    val name: String,
+    val location: Location,
+    val address: String,
+    val amenities: Amenities,
+    val hours: String,
+    val phone: String?,
+    val availableSpots: Int,
+    val totalSpots: Int,
+    val services: List<Service>,
+    val lastUpdate: Long = System.currentTimeMillis()
+)
+
+data class Location(
+    val latitude: Double,
+    val longitude: Double
+)
+
+data class Amenities(
+    val restaurant: Boolean = false,
+    val shower: Boolean = false,
+    val repair: Boolean = false,
+    val fuel: Boolean = false,
+    val wifi: Boolean = false,
+    val secureParking: Boolean = false,
+    val laundry: Boolean = false,
+    val restArea: Boolean = false
+)
+
+data class Service(
+    val name: String,
+    val price: Double,
+    val currency: String = "EUR"
+)
+
+class CentreRoutierService(
+    private val vehiclePOIService: VehicleSpecificPOIService
+) {
+    private val centreRoutiers = mutableMapOf<String, CentreRoutier>()
+    
+    fun addCentreRoutier(centre: CentreRoutier) {
+        centreRoutiers[centre.id] = centre
+    }
+    
+    fun updateAvailableSpots(id: String, spots: Int) {
+        centreRoutiers[id]?.let { centre ->
+            centreRoutiers[id] = centre.copy(
+                availableSpots = spots,
+                lastUpdate = System.currentTimeMillis()
+            )
+        }
+    }
+    
+    fun getNearby(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Double = 50.0,
+        vehicleConfig: VehicleConfiguration,
+        filters: Set<String> = emptySet()
+    ): List<CentreRoutier> {
+        // Validação de tipo de veículo
+        if (!vehiclePOIService.shouldShowPOI(POIType.CENTRE_ROUTIER, vehicleConfig)) {
+            return emptyList()
+        }
+
+        return centreRoutiers.values.filter { centre ->
+            // Verifica distância
+            val distance = calculateDistance(
+                latitude, longitude,
+                centre.location.latitude, centre.location.longitude
+            )
+            
+            if (distance > radiusKm) return@filter false
+            
+            // Aplica filtros
+            filters.all { filter ->
+                when (filter) {
+                    "hasSpots" -> centre.availableSpots > 0
+                    "restaurant" -> centre.amenities.restaurant
+                    "shower" -> centre.amenities.shower
+                    "repair" -> centre.amenities.repair
+                    "secure" -> centre.amenities.secureParking
+                    else -> true
+                }
+            }
+        }.sortedBy { centre ->
+            calculateDistance(
+                latitude, longitude,
+                centre.location.latitude, centre.location.longitude
+            )
+        }
+    }
+    
+    fun getById(id: String): CentreRoutier? = centreRoutiers[id]
+    
+    private fun calculateDistance(
+        lat1: Double, lon1: Double,
+        lat2: Double, lon2: Double
+    ): Double {
+        val R = 6371.0 // Raio da Terra em km
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLon = Math.toRadians(lon2 - lon1)
+        val a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                Math.sin(dLon/2) * Math.sin(dLon/2)
+        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+        return R * c
+    }
+    
+    // Exemplo de dados para teste
+    fun initializeTestData() {
+        addCentreRoutier(
+            CentreRoutier(
+                id = "cr_paris_nord",
+                name = "Centre Routier Paris Nord",
+                location = Location(48.9562, 2.4372),
+                address = "Avenue des Nations, 93420 Villepinte",
+                amenities = Amenities(
+                    restaurant = true,
+                    shower = true,
+                    repair = true,
+                    fuel = true,
+                    wifi = true,
+                    secureParking = true
+                ),
+                hours = "24/7",
+                phone = "+33 1 48 63 00 00",
+                availableSpots = 45,
+                totalSpots = 150,
+                services = listOf(
+                    Service("Stationnement 24h", 15.0),
+                    Service("Douche", 5.0),
+                    Service("Lavage Camion", 35.0)
+                )
+            )
+        )
+    }
+}

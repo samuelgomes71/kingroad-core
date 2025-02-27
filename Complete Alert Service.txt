@@ -1,0 +1,192 @@
+data class RoadAlert(
+    val id: String,
+    val type: AlertType,
+    val category: AlertCategory,
+    val location: Location,
+    val bearing: Float,
+    val timestamp: Long,
+    val votes: Int = 1,
+    val details: Map<String, Any> = mapOf()
+)
+
+enum class AlertCategory {
+    MAIN,
+    ROAD_CONDITION,
+    MAP_ISSUE
+}
+
+enum class AlertType {
+    // Main Alerts
+    ACCIDENT,
+    STOPPED_VEHICLE,
+    
+    // Road Conditions
+    POLICE,
+    TRAFFIC,
+    DANGER,
+    INSPECTION,
+    CLOSURE,
+    CONSTRUCTION,
+    
+    // Map Issues
+    WRONG_DESTINATION,
+    NOT_TRUCK_ROUTE,
+    DETOUR,
+    NO_TURNS,
+    NO_SIGNAL,
+    GLITCH,
+    SPEED_LIMIT,
+    OTHER
+}
+
+data class Location(
+    val latitude: Double,
+    val longitude: Double
+)
+
+class CompleteAlertService {
+    private val activeAlerts = mutableMapOf<String, RoadAlert>()
+    
+    // Configurações por tipo de alerta
+    private val alertConfigs = mapOf(
+        AlertCategory.MAIN to AlertConfig(
+            expirationTime = 2 * 60 * 60 * 1000, // 2 horas
+            radiusKm = 5.0,
+            minVotes = 1
+        ),
+        AlertCategory.ROAD_CONDITION to AlertConfig(
+            expirationTime = 4 * 60 * 60 * 1000, // 4 horas
+            radiusKm = 3.0,
+            minVotes = 2
+        ),
+        AlertCategory.MAP_ISSUE to AlertConfig(
+            expirationTime = 24 * 60 * 60 * 1000, // 24 horas
+            radiusKm = 0.5,
+            minVotes = 3
+        )
+    )
+
+    data class AlertConfig(
+        val expirationTime: Long,
+        val radiusKm: Double,
+        val minVotes: Int
+    )
+    
+    fun reportAlert(
+        type: AlertType,
+        category: AlertCategory,
+        latitude: Double,
+        longitude: Double,
+        bearing: Float,
+        details: Map<String, Any> = mapOf()
+    ): RoadAlert {
+        // Verifica se já existe um alerta similar próximo
+        val nearbyAlert = findNearbyAlert(latitude, longitude, type, 0.1) // 100 metros
+        
+        return if (nearbyAlert != null) {
+            // Atualiza o alerta existente
+            val updated = nearbyAlert.copy(
+                votes = nearbyAlert.votes + 1,
+                timestamp = System.currentTimeMillis()
+            )
+            activeAlerts[nearbyAlert.id] = updated
+            updated
+        } else {
+            // Cria novo alerta
+            val alert = RoadAlert(
+                id = generateAlertId(),
+                type = type,
+                category = category,
+                location = Location(latitude, longitude),
+                bearing = bearing,
+                timestamp = System.currentTimeMillis(),
+                details = details
+            )
+            activeAlerts[alert.id] = alert
+            alert
+        }
+    }
+    
+    fun getRelevantAlerts(
+        userLatitude: Double,
+        userLongitude: Double,
+        userBearing: Float,
+        categories: Set<AlertCategory>? = null
+    ): List<RoadAlert> {
+        val now = System.currentTimeMillis()
+        
+        return activeAlerts.values.filter { alert ->
+            // Filtra por categoria se especificado
+            if (categories != null && alert.category !in categories) return@filter false
+            
+            val config = alertConfigs[alert.category] ?: return@filter false
+            
+            // Filtra por tempo
+            val alertAge = now - alert.timestamp
+            if (alertAge > config.expirationTime) {
+                activeAlerts.remove(alert.id)
+                return@filter false
+            }
+            
+            // Filtra por votos mínimos
+            if (alert.votes < config.minVotes) return@filter false
+            
+            // Filtra por distância
+            val distance = calculateDistance(
+                userLatitude, userLongitude,
+                alert.location.latitude, alert.location.longitude
+            )
+            if (distance > config.radiusKm) return@filter false
+            
+            // Filtra por direção (apenas alertas no mesmo sentido)
+            isInSameDirection(userBearing, alert.bearing)
+        }.sortedByDescending { it.votes }
+    }
+    
+    private fun findNearbyAlert(
+        latitude: Double,
+        longitude: Double,
+        type: AlertType,
+        radiusKm: Double
+    ): RoadAlert? {
+        return activeAlerts.values.find { alert ->
+            alert.type == type && 
+            calculateDistance(
+                latitude, longitude,
+                alert.location.latitude, alert.location.longitude
+            ) <= radiusKm
+        }
+    }
+    
+    private fun isInSameDirection(userBearing: Float, alertBearing: Float): Boolean {
+        val diff = Math.abs(userBearing - alertBearing)
+        return diff <= 45 || diff >= 315 // Cone de 90 graus
+    }
+    
+    private fun calculateDistance(
+        lat1: Double, lon1: Double,
+        lat2: Double, lon2: Double
+    ): Double {
+        val R = 6371.0 // Raio da Terra em km
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLon = Math.toRadians(lon2 - lon1)
+        val a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                Math.sin(dLon/2) * Math.sin(dLon/2)
+        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+        return R * c
+    }
+    
+    private fun generateAlertId(): String = 
+        System.currentTimeMillis().toString() + "_" + (0..9999).random()
+    
+    fun voteAlert(alertId: String) {
+        activeAlerts[alertId]?.let { alert ->
+            activeAlerts[alertId] = alert.copy(votes = alert.votes + 1)
+        }
+    }
+    
+    fun removeAlert(alertId: String) {
+        activeAlerts.remove(alertId)
+    }
+}

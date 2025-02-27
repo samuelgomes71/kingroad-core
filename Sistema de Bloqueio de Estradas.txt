@@ -1,0 +1,170 @@
+import React, { useState, useEffect } from 'react';
+import { AlertTriangle, X, MapPin, List } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
+const RoadBlockingSystem = () => {
+  // Estado para armazenar as estradas bloqueadas
+  const [blockedRoads, setBlockedRoads] = useState([]);
+  const [selectedPoints, setSelectedPoints] = useState([]);
+  const [showBlockMenu, setShowBlockMenu] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [currentRoad, setCurrentRoad] = useState(null);
+
+  // Estrutura de dados para uma estrada bloqueada
+  const RoadBlockData = {
+    id: '',
+    name: '',
+    type: '', // highway, bridge, ferry
+    fullBlock: true, // true para bloqueio completo, false para trecho
+    startPoint: null,
+    endPoint: null,
+    dateBlocked: null,
+    reason: '' // opcional
+  };
+
+  // Componente do Menu de Bloqueios
+  const BlockedRoadsMenu = () => (
+    <div className="absolute right-0 top-0 h-screen w-72 bg-gray-900 p-4 shadow-lg">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold text-white">Estradas Bloqueadas</h2>
+        <button onClick={() => setShowBlockMenu(false)} className="text-gray-400">
+          <X size={20} />
+        </button>
+      </div>
+      
+      <div className="space-y-4">
+        {blockedRoads.map((road) => (
+          <div key={road.id} className="bg-gray-800 p-3 rounded-lg">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-white font-medium">{road.name}</h3>
+                <p className="text-sm text-gray-400">
+                  {road.fullBlock ? 'Bloqueio completo' : 'Bloqueio parcial'}
+                </p>
+              </div>
+              <button 
+                onClick={() => handleUnblock(road.id)}
+                className="text-red-400 hover:text-red-300"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Diálogo de confirmação de bloqueio
+  const ConfirmBlockDialog = () => (
+    <Alert className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 bg-gray-900 border-yellow-600">
+      <AlertTriangle className="text-yellow-600" />
+      <AlertTitle className="text-white">Confirmar Bloqueio</AlertTitle>
+      <AlertDescription className="text-gray-300">
+        Deseja bloquear {currentRoad?.fullBlock ? 'toda a' : 'trecho da'} {currentRoad?.name}?
+        {!currentRoad?.fullBlock && (
+          <div className="mt-2">
+            <p>De: {currentRoad?.startPoint}</p>
+            <p>Até: {currentRoad?.endPoint}</p>
+          </div>
+        )}
+        <div className="mt-4 flex justify-end space-x-3">
+          <button 
+            onClick={() => setShowConfirmDialog(false)}
+            className="px-4 py-2 bg-gray-700 rounded text-white"
+          >
+            Cancelar
+          </button>
+          <button 
+            onClick={confirmBlockRoad}
+            className="px-4 py-2 bg-yellow-600 rounded text-white"
+          >
+            Confirmar
+          </button>
+        </div>
+      </AlertDescription>
+    </Alert>
+  );
+
+  // Função para adicionar ponto de bloqueio
+  const addBlockPoint = (point) => {
+    if (selectedPoints.length < 2) {
+      setSelectedPoints([...selectedPoints, point]);
+      
+      // Se já tiver dois pontos, prepara para bloqueio parcial
+      if (selectedPoints.length === 1) {
+        const roadData = {
+          ...RoadBlockData,
+          id: Date.now().toString(),
+          name: 'Highway 407', // Exemplo - deve vir do mapa
+          fullBlock: false,
+          startPoint: selectedPoints[0],
+          endPoint: point,
+          dateBlocked: new Date()
+        };
+        setCurrentRoad(roadData);
+        setShowConfirmDialog(true);
+      }
+    }
+  };
+
+  // Função para bloqueio completo da estrada
+  const blockEntireRoad = (roadInfo) => {
+    const roadData = {
+      ...RoadBlockData,
+      id: Date.now().toString(),
+      name: roadInfo.name,
+      fullBlock: true,
+      dateBlocked: new Date()
+    };
+    setCurrentRoad(roadData);
+    setShowConfirmDialog(true);
+  };
+
+  // Confirmar bloqueio
+  const confirmBlockRoad = () => {
+    setBlockedRoads([...blockedRoads, currentRoad]);
+    setShowConfirmDialog(false);
+    setSelectedPoints([]);
+    setCurrentRoad(null);
+  };
+
+  // Remover bloqueio
+  const handleUnblock = (roadId) => {
+    setBlockedRoads(blockedRoads.filter(road => road.id !== roadId));
+  };
+
+  // Botão flutuante para abrir menu
+  const MenuButton = () => (
+    <button 
+      onClick={() => setShowBlockMenu(true)}
+      className="fixed bottom-4 right-4 w-12 h-12 bg-yellow-600 rounded-full flex items-center justify-center shadow-lg"
+    >
+      <List className="text-white" />
+    </button>
+  );
+
+  return (
+    <div className="relative">
+      {/* Interface principal do mapa aqui */}
+      
+      {/* Pontos selecionados no mapa */}
+      {selectedPoints.map((point, index) => (
+        <div key={index} className="absolute" style={{ top: point.y, left: point.x }}>
+          <MapPin className="text-yellow-600" />
+        </div>
+      ))}
+
+      {/* Menu de bloqueios */}
+      {showBlockMenu && <BlockedRoadsMenu />}
+
+      {/* Diálogo de confirmação */}
+      {showConfirmDialog && <ConfirmBlockDialog />}
+
+      {/* Botão do menu */}
+      <MenuButton />
+    </div>
+  );
+};
+
+export default RoadBlockingSystem;

@@ -1,0 +1,59 @@
+<svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
+  <!-- Sombra do caminhão -->
+  <path 
+    d="M10 65 L90 65" 
+    stroke="#A0A0A0" 
+    stroke-width="2" 
+    opacity="0.3"
+  />
+  
+  <!-- Corpo principal do caminhão -->
+  <path 
+    d="M15 30 L45 30 L45 60 L15 60 Z" 
+    fill="#7DD3FC" 
+    stroke="#0EA5E9"
+    stroke-width="2"
+  />
+  
+  <!-- Cabine do caminhão -->
+  <path 
+    d="M45 35 L60 35 L60 60 L45 60 Z" 
+    fill="#7DD3FC" 
+    stroke="#0EA5E9"
+    stroke-width="2"
+  />
+  
+  <!-- Letra P -->
+  <text
+    x="25"
+    y="50"
+    font-size="20"
+    font-weight="bold"
+    fill="white"
+    text-anchor="middle"
+  >P</text>
+  
+  <!-- Símbolo $ -->
+  <text
+    x="70"
+    y="40"
+    font-size="18"
+    font-weight="bold"
+    fill="#0EA5E9"
+    text-anchor="middle"
+  >$</text>
+  
+  <!-- Check mark verde -->
+  <path 
+    d="M65 45 L70 50 L80 40" 
+    stroke="#22C55E" 
+    stroke-width="3" 
+    fill="none"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  
+  <!-- Rodas -->
+  <circle cx="25" cy="60" r="6" fill="#0EA5E9"/>
+  <circle cx="50" cy="60" r="6" fill="#0EA5E9"/>
+</svg>

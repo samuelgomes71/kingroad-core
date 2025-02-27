@@ -1,0 +1,130 @@
+// CustomUnitsManager.kt
+class CustomUnitsManager(
+    private val storageService: StorageService
+) {
+    data class UnitPreferences(
+        val speed: SpeedUnit = SpeedUnit.KPH,
+        val distance: DistanceUnit = DistanceUnit.KILOMETERS,
+        val exitDistance: ExitDistanceUnit = ExitDistanceUnit.METERS,
+        val weight: WeightUnit = WeightUnit.METRIC_TON,
+        val height: HeightUnit = HeightUnit.METERS
+    )
+
+    enum class SpeedUnit {
+        KPH,    // Quilômetros por hora
+        MPH;    // Milhas por hora
+
+        fun convert(value: Double): Double = when (this) {
+            KPH -> value
+            MPH -> value * 0.621371
+        }
+
+        fun format(value: Double): String = when (this) {
+            KPH -> "${value.toInt()} km/h"
+            MPH -> "${value.toInt()} mph"
+        }
+    }
+
+    enum class DistanceUnit {
+        KILOMETERS,
+        MILES,
+        YARDS;
+
+        fun convert(value: Double): Double = when (this) {
+            KILOMETERS -> value
+            MILES -> value * 0.621371
+            YARDS -> value * 1093.61
+        }
+
+        fun format(value: Double): String = when (this) {
+            KILOMETERS -> "${value.toInt()} km"
+            MILES -> "${value.toInt()} mi"
+            YARDS -> "${value.toInt()} yd"
+        }
+    }
+
+    enum class ExitDistanceUnit {
+        METERS,
+        YARDS,
+        FEET;
+
+        fun convert(value: Double): Double = when (this) {
+            METERS -> value
+            YARDS -> value * 1.09361
+            FEET -> value * 3.28084
+        }
+
+        fun format(value: Double): String = when (this) {
+            METERS -> "${value.toInt()} m"
+            YARDS -> "${value.toInt()} yd"
+            FEET -> "${value.toInt()} ft"
+        }
+    }
+
+    // Formatar valores com unidades apropriadas
+    fun formatMeasurement(
+        value: Double,
+        preferences: UnitPreferences,
+        type: MeasurementType
+    ): String {
+        return when (type) {
+            MeasurementType.SPEED -> preferences.speed.format(value)
+            MeasurementType.DISTANCE -> preferences.distance.format(value)
+            MeasurementType.EXIT_DISTANCE -> preferences.exitDistance.format(value)
+            MeasurementType.WEIGHT -> formatWeight(value, preferences.weight)
+            MeasurementType.HEIGHT -> formatHeight(value, preferences.height)
+        }
+    }
+
+    // Converter valores entre unidades
+    fun convertValue(
+        value: Double,
+        from: MeasurementUnit,
+        to: MeasurementUnit
+    ): Double {
+        // Primeiro converte para o valor base (métrico)
+        val baseValue = when (from) {
+            is SpeedUnit -> if (from == SpeedUnit.MPH) value * 1.60934 else value
+            is DistanceUnit -> when (from) {
+                DistanceUnit.MILES -> value * 1.60934
+                DistanceUnit.YARDS -> value * 0.9144
+                else -> value
+            }
+            is ExitDistanceUnit -> when (from) {
+                ExitDistanceUnit.YARDS -> value * 0.9144
+                ExitDistanceUnit.FEET -> value * 0.3048
+                else -> value
+            }
+            else -> value
+        }
+
+        // Então converte para a unidade desejada
+        return when (to) {
+            is SpeedUnit -> if (to == SpeedUnit.MPH) baseValue * 0.621371 else baseValue
+            is DistanceUnit -> when (to) {
+                DistanceUnit.MILES -> baseValue * 0.621371
+                DistanceUnit.YARDS -> baseValue * 1093.61
+                else -> baseValue
+            }
+            is ExitDistanceUnit -> when (to) {
+                ExitDistanceUnit.YARDS -> baseValue * 1.09361
+                ExitDistanceUnit.FEET -> baseValue * 3.28084
+                else -> baseValue
+            }
+            else -> baseValue
+        }
+    }
+
+    enum class MeasurementType {
+        SPEED,
+        DISTANCE,
+        EXIT_DISTANCE,
+        WEIGHT,
+        HEIGHT
+    }
+
+    sealed class MeasurementUnit
+    class SpeedUnit : MeasurementUnit()
+    class DistanceUnit : MeasurementUnit()
+    class ExitDistanceUnit : MeasurementUnit()
+}

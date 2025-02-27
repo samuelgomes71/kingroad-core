@@ -1,0 +1,53 @@
+import React, { useState, useEffect } from 'react';
+import { AlertTriangle } from 'lucide-react';
+
+const ManeuverAlertComponent = ({ alert }) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (alert) {
+      setIsVisible(true);
+      // Esconde o alerta após 3 segundos
+      const timer = setTimeout(() => setIsVisible(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [alert]);
+
+  if (!alert || !isVisible) return null;
+
+  const alertStyles = {
+    warning: {
+      background: 'rgba(255, 165, 0, 0.9)',
+      border: '2px solid #FFA500'
+    },
+    danger: {
+      background: 'rgba(255, 0, 0, 0.9)',
+      border: '2px solid #FF0000'
+    }
+  };
+
+  const style = alert.level === 'WARNING' ? alertStyles.warning : alertStyles.danger;
+
+  return (
+    <div className="fixed top-1/4 left-1/2 transform -translate-x-1/2 z-50">
+      <div
+        className={`flex items-center space-x-2 p-4 rounded-lg shadow-lg animate-pulse ${
+          alert.level === 'WARNING' ? 'animate-bounce' : 'animate-shake'
+        }`}
+        style={style}
+      >
+        <AlertTriangle 
+          className="w-8 h-8 text-white" 
+          style={{ 
+            transform: `scale(${1 + alert.severity / 100})` 
+          }}
+        />
+        <span className="text-white font-bold text-lg">
+          {alert.message}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+export default ManeuverAlertComponent;

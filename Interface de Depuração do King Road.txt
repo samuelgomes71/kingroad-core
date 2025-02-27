@@ -1,0 +1,412 @@
+import React, { useState, useEffect } from 'react';
+import { Code, Eye, Download, Copy, Layers, Menu, Save, ToggleLeft, X } from 'lucide-react';
+
+const DebugInterface = () => {
+  // Estados
+  const [isActive, setIsActive] = useState(false);
+  const [showPanel, setShowPanel] = useState(false);
+  const [config, setConfig] = useState({
+    showIds: true,
+    showNames: true,
+    showBorders: true,
+    showPaths: false,
+    labelSize: 'medium',
+    position: 'top-right'
+  });
+  
+  // Simulação de dados do sistema de depuração
+  const [menuMap, setMenuMap] = useState(null);
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  
+  // Carrega dados do mapa de menus para demonstração
+  useEffect(() => {
+    // Simulação de dados - na aplicação real, estes seriam gerados pelo KingRoadDebugMode
+    const demoMap = generateDemoMenuMap();
+    setMenuMap(demoMap);
+  }, []);
+  
+  // Função que gera um mapa de menus de demonstração
+  const generateDemoMenuMap = () => {
+    // Estrutura simplificada dos menus
+    const menus = {
+      "Navegação": {
+        id: 1,
+        items: [
+          { id: 2, name: "Iniciar rota", path: "Navegação.Iniciar rota" },
+          { id: 3, name: "Destinos recentes", path: "Navegação.Destinos recentes" },
+          { id: 4, name: "Favoritos", path: "Navegação.Favoritos" },
+          { 
+            id: 5, 
+            name: "Opções de rota", 
+            path: "Navegação.Opções de rota",
+            items: [
+              { id: 6, name: "Evitar estradas com portagem", path: "Navegação.Opções de rota.Evitar estradas com portagem" },
+              { id: 7, name: "Evitar estradas de terra", path: "Navegação.Opções de rota.Evitar estradas de terra" },
+              { id: 8, name: "Preferir autoestradas", path: "Navegação.Opções de rota.Preferir autoestradas" }
+            ]
+          }
+        ]
+      },
+      "Mapa": {
+        id: 9,
+        items: [
+          { id: 10, name: "2D/3D", path: "Mapa.2D/3D" },
+          { id: 11, name: "Dia/Noite", path: "Mapa.Dia/Noite" },
+          { id: 12, name: "Mostrar POIs", path: "Mapa.Mostrar POIs" },
+          { id: 13, name: "Mapas offline", path: "Mapa.Mapas offline" }
+        ]
+      },
+      "Veículo": {
+        id: 14,
+        items: [
+          { id: 15, name: "Perfil", path: "Veículo.Perfil" },
+          { id: 16, name: "Dimensões", path: "Veículo.Dimensões" },
+          { id: 17, name: "Peso", path: "Veículo.Peso" },
+          { id: 18, name: "Combustível", path: "Veículo.Combustível" }
+        ]
+      },
+      "Configurações": {
+        id: 19,
+        items: [
+          { id: 20, name: "Idioma", path: "Configurações.Idioma" },
+          { id: 21, name: "Unidades", path: "Configurações.Unidades" },
+          { id: 22, name: "Som", path: "Configurações.Som" },
+          { id: 23, name: "Tema", path: "Configurações.Tema" },
+          { 
+            id: 24, 
+            name: "Avançado", 
+            path: "Configurações.Avançado",
+            items: [
+              { id: 25, name: "Calibração GPS", path: "Configurações.Avançado.Calibração GPS" },
+              { id: 26, name: "Sincronização", path: "Configurações.Avançado.Sincronização" },
+              { id: 27, name: "Reiniciar aplicação", path: "Configurações.Avançado.Reiniciar aplicação" }
+            ]
+          }
+        ]
+      },
+      "Alertas": {
+        id: 28,
+        items: [
+          { id: 29, name: "Radar de velocidade", path: "Alertas.Radar de velocidade" },
+          { id: 30, name: "Avisos de trânsito", path: "Alertas.Avisos de trânsito" },
+          { id: 31, name: "Cruzamento de fronteira", path: "Alertas.Cruzamento de fronteira" }
+        ]
+      },
+      "Tela de Navegação": {
+        id: 32,
+        items: [
+          { id: 33, name: "Velocidade atual", path: "Tela de Navegação.Velocidade atual" },
+          { id: 34, name: "Limite de velocidade", path: "Tela de Navegação.Limite de velocidade" },
+          { id: 35, name: "Barra de progresso", path: "Tela de Navegação.Barra de progresso" },
+          { id: 36, name: "Distância restante", path: "Tela de Navegação.Distância restante" },
+          { id: 37, name: "Tempo de chegada", path: "Tela de Navegação.Tempo de chegada" },
+          { id: 38, name: "Próxima instrução", path: "Tela de Navegação.Próxima instrução" },
+          { id: 39, name: "Botão de zoom", path: "Tela de Navegação.Botão de zoom" }
+        ]
+      },
+      "Botões Rápidos": {
+        id: 40,
+        items: [
+          { id: 41, name: "Silenciar", path: "Botões Rápidos.Silenciar" },
+          { id: 42, name: "Relatar incidente", path: "Botões Rápidos.Relatar incidente" },
+          { id: 43, name: "Alternar dia/noite", path: "Botões Rápidos.Alternar dia/noite" }
+        ]
+      }
+    };
+    
+    return menus;
+  };
+  
+  // Formatar mapa para exportação/visualização
+  const formatMenuMap = () => {
+    let output = "=== KING ROAD: MAPA DE IDENTIFICAÇÃO ===\n\n";
+    
+    if (!menuMap) return output + "Carregando dados...";
+    
+    // Percorrer todos os menus principais
+    Object.entries(menuMap).forEach(([menuName, menuData]) => {
+      output += `\n== MENU: ${menuName} (ID #${menuData.id}) ==\n\n`;
+      
+      // Adicionar itens do menu
+      const processItems = (items, indent = '') => {
+        items.forEach(item => {
+          output += `${indent}ID #${item.id}: ${item.path}\n`;
+          
+          // Processar subitens recursivamente, se existirem
+          if (item.items && item.items.length > 0) {
+            processItems(item.items, indent + '  ');
+          }
+        });
+      };
+      
+      processItems(menuData.items);
+    });
+    
+    // Adicionar instruções de uso
+    output += "\n\n=== INSTRUÇÕES ===\n";
+    output += "Para solicitar modificações, use o número do ID (#123) ou o caminho completo.\n";
+    output += "Exemplos:\n";
+    output += "- \"Mova o elemento #45 para dentro do menu Configurações\"\n";
+    output += "- \"Remova o item 'Alertas.Radar de velocidade' do menu\"\n";
+    output += "- \"Quero que o elemento #12 apareça antes do elemento #15\"\n";
+    
+    return output;
+  };
+  
+  // Copiar para área de transferência
+  const copyToClipboard = () => {
+    const text = formatMenuMap();
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        alert("Mapa copiado para a área de transferência!");
+      })
+      .catch(err => {
+        console.error('Erro ao copiar: ', err);
+        alert("Erro ao copiar. Tente a opção de download.");
+      });
+  };
+  
+  // Baixar como arquivo de texto
+  const downloadMap = () => {
+    const text = formatMenuMap();
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'KingRoad-Menu-Map.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+  
+  // Alternar estado do modo de depuração
+  const toggleDebugMode = () => {
+    const newState = !isActive;
+    setIsActive(newState);
+    
+    // Em uma implementação real, isto ativaria/desativaria o KingRoadDebugMode
+    console.log(`Modo de depuração ${newState ? 'ativado' : 'desativado'}`);
+    
+    // Se estiver desativando, também fecha o painel
+    if (!newState) {
+      setShowPanel(false);
+    }
+  };
+  
+  // Alternar visibilidade do painel
+  const togglePanel = () => {
+    setShowPanel(!showPanel);
+  };
+  
+  // Alternar configurações individuais
+  const toggleConfig = (key) => {
+    setConfig(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+  
+  // Mudar opções com múltiplos valores
+  const changeOption = (key, value) => {
+    setConfig(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+  
+  return (
+    <div className={`${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'} min-h-screen p-4`}>
+      <h1 className="text-xl font-bold mb-6 flex items-center">
+        <Code className="w-6 h-6 mr-2 text-blue-500" />
+        Modo de Depuração do King Road
+      </h1>
+      
+      {/* Botão principal de ativar/desativar */}
+      <div className="mb-6">
+        <button 
+          onClick={toggleDebugMode}
+          className={`px-4 py-2 rounded-lg font-medium flex items-center ${isActive ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} text-white transition-colors`}
+        >
+          {isActive ? (
+            <>
+              <X className="w-5 h-5 mr-2" />
+              Desativar Modo de Depuração
+            </>
+          ) : (
+            <>
+              <Code className="w-5 h-5 mr-2" />
+              Ativar Modo de Depuração
+            </>
+          )}
+        </button>
+        
+        {isActive && (
+          <button 
+            onClick={togglePanel}
+            className="mt-2 px-4 py-2 rounded-lg font-medium flex items-center bg-gray-700 hover:bg-gray-600 text-white transition-colors"
+          >
+            {showPanel ? (
+              <>
+                <Layers className="w-5 h-5 mr-2" />
+                Ocultar Painel de Controle
+              </>
+            ) : (
+              <>
+                <Layers className="w-5 h-5 mr-2" />
+                Mostrar Painel de Controle
+              </>
+            )}
+          </button>
+        )}
+      </div>
+      
+      {/* Painel de controle */}
+      {isActive && showPanel && (
+        <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg p-4 mb-6`}>
+          <h2 className="text-lg font-medium mb-4 flex items-center">
+            <Menu className="w-5 h-5 mr-2 text-blue-500" />
+            Configurações de Visualização
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Opções de toggle */}
+            <div className="space-y-3">
+              <div 
+                className="flex items-center justify-between p-2 rounded cursor-pointer hover:bg-gray-700"
+                onClick={() => toggleConfig('showIds')}
+              >
+                <span>Mostrar IDs</span>
+                <div className={`w-10 h-6 rounded-full flex items-center transition-colors ${config.showIds ? 'bg-blue-600 justify-end' : 'bg-gray-600 justify-start'}`}>
+                  <div className="w-4 h-4 bg-white rounded-full mx-1"></div>
+                </div>
+              </div>
+              
+              <div 
+                className="flex items-center justify-between p-2 rounded cursor-pointer hover:bg-gray-700"
+                onClick={() => toggleConfig('showNames')}
+              >
+                <span>Mostrar Nomes</span>
+                <div className={`w-10 h-6 rounded-full flex items-center transition-colors ${config.showNames ? 'bg-blue-600 justify-end' : 'bg-gray-600 justify-start'}`}>
+                  <div className="w-4 h-4 bg-white rounded-full mx-1"></div>
+                </div>
+              </div>
+              
+              <div 
+                className="flex items-center justify-between p-2 rounded cursor-pointer hover:bg-gray-700"
+                onClick={() => toggleConfig('showBorders')}
+              >
+                <span>Mostrar Bordas</span>
+                <div className={`w-10 h-6 rounded-full flex items-center transition-colors ${config.showBorders ? 'bg-blue-600 justify-end' : 'bg-gray-600 justify-start'}`}>
+                  <div className="w-4 h-4 bg-white rounded-full mx-1"></div>
+                </div>
+              </div>
+              
+              <div 
+                className="flex items-center justify-between p-2 rounded cursor-pointer hover:bg-gray-700"
+                onClick={() => toggleConfig('showPaths')}
+              >
+                <span>Mostrar Caminhos</span>
+                <div className={`w-10 h-6 rounded-full flex items-center transition-colors ${config.showPaths ? 'bg-blue-600 justify-end' : 'bg-gray-600 justify-start'}`}>
+                  <div className="w-4 h-4 bg-white rounded-full mx-1"></div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Opções de seleção */}
+            <div className="space-y-3">
+              <div className="p-2">
+                <label className="block mb-1 text-sm">Tamanho da Etiqueta</label>
+                <select 
+                  value={config.labelSize}
+                  onChange={(e) => changeOption('labelSize', e.target.value)}
+                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded"
+                >
+                  <option value="small">Pequeno</option>
+                  <option value="medium">Médio</option>
+                  <option value="large">Grande</option>
+                </select>
+              </div>
+              
+              <div className="p-2">
+                <label className="block mb-1 text-sm">Posição da Etiqueta</label>
+                <select 
+                  value={config.position}
+                  onChange={(e) => changeOption('position', e.target.value)}
+                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded"
+                >
+                  <option value="top-right">Superior Direito</option>
+                  <option value="top-left">Superior Esquerdo</option>
+                  <option value="bottom-right">Inferior Direito</option>
+                  <option value="bottom-left">Inferior Esquerdo</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-4 pt-4 border-t border-gray-700">
+            <button 
+              className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center"
+              onClick={() => console.log("Aplicando configurações...", config)}
+            >
+              <Save className="w-5 h-5 mr-2" />
+              Aplicar Configurações
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Mapa de elementos */}
+      {isActive && (
+        <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg p-4 mb-6`}>
+          <h2 className="text-lg font-medium mb-4 flex items-center">
+            <Eye className="w-5 h-5 mr-2 text-blue-500" />
+            Mapa de Elementos da Interface
+          </h2>
+          
+          <pre className={`p-4 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'} rounded-lg text-xs font-mono overflow-auto max-h-96`}>
+            {formatMenuMap()}
+          </pre>
+          
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button 
+              onClick={copyToClipboard}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm flex items-center"
+            >
+              <Copy className="w-4 h-4 mr-2" />
+              Copiar para Área de Transferência
+            </button>
+            
+            <button 
+              onClick={downloadMap}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm flex items-center"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Baixar como Arquivo de Texto
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Instruções */}
+      <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg p-4`}>
+        <h2 className="text-lg font-medium mb-4">Como Usar o Modo de Depuração</h2>
+        
+        <ol className="list-decimal pl-5 space-y-2">
+          <li>Clique em "Ativar Modo de Depuração" para mostrar os identificadores numéricos em todos os elementos do King Road.</li>
+          <li>Navegue pelo aplicativo normalmente para ver os IDs sobrepostos a cada elemento da interface.</li>
+          <li>Use o Painel de Controle para ajustar como os identificadores são exibidos.</li>
+          <li>Copie ou baixe o mapa completo de elementos para referência.</li>
+          <li>Ao solicitar modificações, use os números ID ou caminhos completos para identificar elementos com precisão.</li>
+        </ol>
+        
+        <div className="mt-4 p-3 bg-blue-900/20 rounded-lg text-sm">
+          <p><strong>Dica:</strong> Para modificações complexas no King Road, salve o mapa de IDs e envie-o junto com suas solicitações para garantir que as alterações sejam aplicadas exatamente onde você deseja.</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DebugInterface;

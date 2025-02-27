@@ -1,0 +1,314 @@
+import React, { useState } from 'react';
+import { 
+  ChevronDown, 
+  ChevronUp, 
+  X, 
+  DollarSign, 
+  Anchor, 
+  AlertTriangle,
+  Clock,
+  CreditCard,
+  Settings,
+  Info 
+} from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
+const EnhancedTollManager = () => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState('current');
+  const [selectedSection, setSelectedSection] = useState(null);
+
+  const [tollData, setTollData] = useState({
+    sections: [
+      {
+        id: 1,
+        name: "Highway 407 ETR",
+        type: "highway",
+        segment: "Toronto - Burlington",
+        distance: "45.3",
+        cost: 52.30,
+        enabled: true,
+        peakHours: "6:00-10:00, 15:00-19:00",
+        peakCost: 58.50,
+        restrictions: {
+          height: "4.5m",
+          weight: "40t",
+          axles: "5+"
+        },
+        facilities: ["Combustível", "Área de Descanso", "Restaurante"],
+        alternative: {
+          name: "Highway 401",
+          type: "free",
+          extraTime: "35min",
+          extraDistance: "8.5km"
+        }
+      },
+      {
+        id: 2,
+        name: "Confederation Bridge",
+        type: "bridge",
+        segment: "NB - PEI",
+        distance: "12.9",
+        cost: 48.50,
+        enabled: true,
+        restrictions: {
+          height: "4.8m",
+          weight: "45t",
+          axles: "Any"
+        },
+        facilities: ["Telefone de Emergência"],
+        alternative: {
+          name: "Ferry Service",
+          type: "paid",
+          cost: 35.00,
+          duration: "3h"
+        }
+      }
+    ],
+    history: {
+      lastMonth: 845.60,
+      thisMonth: 623.40,
+      recentTrips: [
+        {
+          date: "2024-02-15",
+          route: "Toronto - Montreal",
+          tolls: 3,
+          total: 156.80
+        },
+        {
+          date: "2024-02-10",
+          route: "Quebec - Maine",
+          tolls: 4,
+          total: 198.30
+        }
+      ]
+    },
+    payment: {
+      balance: 245.60,
+      methods: [
+        {
+          id: 1,
+          type: "transponder",
+          number: "ETR-45678",
+          discount: "15%"
+        },
+        {
+          id: 2,
+          type: "card",
+          number: "****-4589",
+          expires: "05/25"
+        }
+      ]
+    }
+  });
+
+  // Toggle seção
+  const toggleSection = (id) => {
+    setTollData(prev => ({
+      ...prev,
+      sections: prev.sections.map(section => 
+        section.id === id ? {...section, enabled: !section.enabled} : section
+      )
+    }));
+  };
+
+  // Calcular total
+  const calculateTotal = () => {
+    return tollData.sections
+      .filter(s => s.enabled)
+      .reduce((sum, section) => sum + section.cost, 0);
+  };
+
+  // Componente de Seção Individual
+  const TollSection = ({ section }) => (
+    <div className="p-4 border-b">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center">
+            {section.type === 'bridge' ? (
+              <Anchor className="text-blue-500 mr-2" size={20} />
+            ) : (
+              <DollarSign className="text-green-600 mr-2" size={20} />
+            )}
+            <h3 className="text-gray-800 font-medium">{section.name}</h3>
+          </div>
+          
+          <div className="mt-2 space-y-2">
+            <p className="text-sm text-gray-600">{section.segment}</p>
+            <div className="flex items-center text-sm text-gray-600">
+              <span>{section.distance}km</span>
+              <span className="mx-2">|</span>
+              <span className="text-green-600">CAD ${section.cost.toFixed(2)}</span>
+            </div>
+
+            <div className="bg-gray-50 p-2 rounded mt-2">
+              <p className="text-sm font-medium text-gray-700">Restrições:</p>
+              <p className="text-sm text-gray-600">
+                Altura: {section.restrictions.height} | 
+                Peso: {section.restrictions.weight} |
+                Eixos: {section.restrictions.axles}
+              </p>
+            </div>
+
+            <div className="bg-gray-50 p-2 rounded">
+              <p className="text-sm font-medium text-gray-700">Alternativa:</p>
+              <p className="text-sm text-gray-600">
+                {section.alternative.name} - 
+                {section.alternative.type === 'free' ? (
+                  <span> +{section.alternative.extraTime}</span>
+                ) : (
+                  <span> ${section.alternative.cost.toFixed(2)}</span>
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => toggleSection(section.id)}
+          className={`px-3 py-1 rounded-full text-sm font-medium ${
+            section.enabled
+              ? 'bg-green-100 text-green-800'
+              : 'bg-gray-100 text-gray-800'
+          }`}
+        >
+          {section.enabled ? 'Ativo' : 'Desativado'}
+        </button>
+      </div>
+    </div>
+  );
+
+  // Componente de Histórico
+  const HistoryView = () => (
+    <div className="p-4">
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="bg-blue-50 p-3 rounded">
+          <p className="text-sm text-gray-600">Mês Atual</p>
+          <p className="text-lg font-medium text-blue-600">
+            CAD ${tollData.history.thisMonth.toFixed(2)}
+          </p>
+        </div>
+        <div className="bg-gray-50 p-3 rounded">
+          <p className="text-sm text-gray-600">Mês Anterior</p>
+          <p className="text-lg font-medium text-gray-600">
+            CAD ${tollData.history.lastMonth.toFixed(2)}
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {tollData.history.recentTrips.map((trip, index) => (
+          <div key={index} className="bg-white p-3 rounded border">
+            <div className="flex justify-between">
+              <span className="font-medium">{trip.route}</span>
+              <span className="text-green-600">CAD ${trip.total.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm text-gray-600 mt-1">
+              <span>{trip.date}</span>
+              <span>{trip.tolls} pedágios</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Componente de Pagamento
+  const PaymentView = () => (
+    <div className="p-4">
+      <div className="bg-green-50 p-4 rounded mb-4">
+        <p className="text-2xl font-medium text-green-600">
+          CAD ${tollData.payment.balance.toFixed(2)}
+        </p>
+        <p className="text-sm text-gray-600 mt-1">Saldo Atual</p>
+      </div>
+
+      <div className="space-y-3">
+        {tollData.payment.methods.map(method => (
+          <div key={method.id} className="bg-white p-3 rounded border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                {method.type === 'transponder' ? (
+                  <Settings className="text-blue-500 mr-2" size={20} />
+                ) : (
+                  <CreditCard className="text-purple-500 mr-2" size={20} />
+                )}
+                <div>
+                  <p className="font-medium">
+                    {method.type === 'transponder' ? 'Transponder' : 'Cartão'}
+                  </p>
+                  <p className="text-sm text-gray-600">{method.number}</p>
+                </div>
+              </div>
+              {method.discount && (
+                <span className="text-green-600 text-sm">
+                  Desconto: {method.discount}
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-x-0 bottom-0 max-w-xl mx-auto bg-white rounded-t-lg shadow-lg">
+      {/* Cabeçalho */}
+      <div className="p-4 border-b">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-bold text-gray-800">Pedágios na Rota</h2>
+          <button 
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            {isExpanded ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex space-x-4 mt-4">
+          {['current', 'history', 'payment'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                activeTab === tab
+                  ? 'bg-blue-100 text-blue-800'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              {tab === 'current' ? 'Atual' : 
+               tab === 'history' ? 'Histórico' : 'Pagamento'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Conteúdo */}
+      {isExpanded && (
+        <div className="max-h-[70vh] overflow-y-auto">
+          {activeTab === 'current' && (
+            <>
+              {tollData.sections.map(section => (
+                <TollSection key={section.id} section={section} />
+              ))}
+              <div className="p-4 bg-gray-50">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Total Ativo:</span>
+                  <span className="text-green-600 font-medium">
+                    CAD ${calculateTotal().toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
+          {activeTab === 'history' && <HistoryView />}
+          {activeTab === 'payment' && <PaymentView />}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default EnhancedTollManager;

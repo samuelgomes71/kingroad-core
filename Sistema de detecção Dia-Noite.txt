@@ -1,0 +1,133 @@
+// DayNightManager.kt
+class DayNightManager(
+    private val locationService: LocationService,
+    private val settingsManager: SettingsManager
+) {
+    data class SunriseSunset(
+        val sunrise: Long,
+        val sunset: Long,
+        val civilTwilightStart: Long,
+        val civilTwilightEnd: Long
+    )
+
+    data class DayNightPreference(
+        val mode: DayNightMode,
+        val autoChangeEnabled: Boolean = true,
+        val manuallySetDayMode: Boolean? = null
+    )
+
+    enum class DayNightMode {
+        AUTO,      // Baseado na localização/hora
+        MANUAL,    // Definido pelo usuário
+        SYSTEM     // Baseado nas configurações do sistema
+    }
+
+    private var currentLocation: Location? = null
+    private var currentSunTimes: SunriseSunset? = null
+    private var preference = DayNightPreference(mode = DayNightMode.AUTO)
+
+    // Iniciar monitoramento
+    suspend fun startMonitoring() {
+        coroutineScope {
+            launch { monitorLocation() }
+            launch { monitorSystemSettings() }
+        }
+    }
+
+    // Monitorar mudanças de localização
+    private suspend fun monitorLocation() {
+        locationService.getLocationUpdates().collect { location ->
+            currentLocation = location
+            updateSunTimes(location)
+            updateDayNightMode()
+        }
+    }
+
+    // Calcular horários do sol para a localização atual
+    private suspend fun updateSunTimes(location: Location) {
+        val sunTimes = calculateSunTimes(
+            latitude = location.latitude,
+            longitude = location.longitude,
+            timestamp = System.currentTimeMillis()
+        )
+        currentSunTimes = sunTimes
+        updateDayNightMode()
+    }
+
+    // Calcular se é dia ou noite
+    private fun isDaytime(timestamp: Long = System.currentTimeMillis()): Boolean {
+        val sunTimes = currentSunTimes ?: return defaultDayTimeCheck()
+        
+        return when {
+            // Durante o dia
+            timestamp in sunTimes.sunrise..sunTimes.sunset -> true
+            
+            // Durante o crepúsculo civil
+            timestamp in sunTimes.civilTwilightStart..sunTimes.sunrise -> true
+            timestamp in sunTimes.sunset..sunTimes.civilTwilightEnd -> true
+            
+            // Noite
+            else -> false
+        }
+    }
+
+    // Verificação padrão baseada no horário
+    private fun defaultDayTimeCheck(): Boolean {
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        return hour in 6..17
+    }
+
+    // Atualizar modo baseado em todas as condições
+    private suspend fun updateDayNightMode() {
+        val isDayMode = when (preference.mode) {
+            DayNightMode.AUTO -> isDaytime()
+            DayNightMode.MANUAL -> preference.manuallySetDayMode ?: isDaytime()
+            DayNightMode.SYSTEM -> isSystemInDayMode()
+        }
+
+        // Notificar mudança
+        onDayNightModeChanged(isDayMode)
+    }
+
+    // Definir preferência do usuário
+    fun setUserPreference(newPreference: DayNightPreference) {
+        preference = newPreference
+        updateDayNightMode()
+    }
+
+    // Alternar manualmente
+    fun toggleManually() {
+        val currentMode = preference.manuallySetDayMode ?: isDaytime()
+        preference = preference.copy(
+            mode = DayNightMode.MANUAL,
+            manuallySetDayMode = !currentMode
+        )
+        updateDayNightMode()
+    }
+
+    // Retornar ao modo automático
+    fun resetToAuto() {
+        preference = preference.copy(
+            mode = DayNightMode.AUTO,
+            manuallySetDayMode = null
+        )
+        updateDayNightMode()
+    }
+
+    companion object {
+        private fun calculateSunTimes(
+            latitude: Double,
+            longitude: Double,
+            timestamp: Long
+        ): SunriseSunset {
+            // Implementar cálculo astronômico aqui
+            // Usar fórmulas de posição solar ou API externa
+            TODO("Implementar cálculo de sunrise/sunset")
+        }
+
+        private fun isSystemInDayMode(): Boolean {
+            // Verificar configuração do sistema
+            return true
+        }
+    }
+}

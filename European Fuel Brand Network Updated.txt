@@ -1,0 +1,259 @@
+data class FuelNetworkBrand(
+    val code: String,
+    val name: String,
+    val logo: String,
+    val countries: List<String>,
+    val paymentCards: List<String>,
+    val primaryColor: String,
+    val stationTypes: List<StationType>,
+    val specialFeatures: List<Feature>,
+    val websiteUrl: String? = null
+)
+
+enum class StationType {
+    SELF_SERVICE,
+    UNMANNED,
+    TRUCK_ONLY,
+    MIXED,
+    HIGHWAY
+}
+
+enum class Feature {
+    HIGH_FLOW,
+    ADBLUE,
+    SECURE_PARKING,
+    CARD_ONLY,
+    CONTACTLESS,
+    APP_PAYMENT,
+    FLEET_MANAGEMENT
+}
+
+// Classe para gerenciar as principais redes de postos na Europa
+class EuropeanFuelNetworks {
+    private val networks = mutableListOf<FuelNetworkBrand>()
+    
+    init {
+        // Carrega as principais redes
+        loadMajorNetworks()
+    }
+    
+    fun getNetworkByCode(code: String): FuelNetworkBrand? {
+        return networks.find { it.code == code }
+    }
+    
+    fun getNetworksForCountry(countryCode: String): List<FuelNetworkBrand> {
+        return networks.filter { countryCode.uppercase() in it.countries }
+    }
+    
+    private fun loadMajorNetworks() {
+        // AS24 - Principal rede de postos de autoatendimento na Europa
+        networks.add(
+            FuelNetworkBrand(
+                code = "AS24",
+                name = "AS 24",
+                logo = "as24_logo.png",
+                countries = listOf("FR", "ES", "PT", "BE", "NL", "DE", "AT", "PL", "CZ", "SK", "HU", "RO", "BG", "IT"),
+                paymentCards = listOf("AS24 Card", "DKV", "UTA", "Eurowag"),
+                primaryColor = "#E30016",
+                stationTypes = listOf(StationType.SELF_SERVICE, StationType.UNMANNED, StationType.TRUCK_ONLY),
+                specialFeatures = listOf(Feature.HIGH_FLOW, Feature.ADBLUE, Feature.FLEET_MANAGEMENT),
+                websiteUrl = "https://www.as24.com"
+            )
+        )
+        
+        // IDS - Rede holandesa com forte presença no Benelux e Alemanha
+        networks.add(
+            FuelNetworkBrand(
+                code = "IDS",
+                name = "IDS",
+                logo = "ids_logo.png",
+                countries = listOf("NL", "BE", "DE", "LU", "PL", "FR"),
+                paymentCards = listOf("IDS Card", "DKV", "UTA", "AS24", "Eurowag"),
+                primaryColor = "#005CA9",
+                stationTypes = listOf(StationType.SELF_SERVICE, StationType.UNMANNED, StationType.TRUCK_ONLY),
+                specialFeatures = listOf(Feature.HIGH_FLOW, Feature.ADBLUE),
+                websiteUrl = "https://www.ids-group.com"
+            )
+        )
+        
+        // Keyfuels - Principal rede no Reino Unido
+        networks.add(
+            FuelNetworkBrand(
+                code = "KEYFUELS",
+                name = "Keyfuels",
+                logo = "keyfuels_logo.png",
+                countries = listOf("GB"),
+                paymentCards = listOf("Keyfuels Card", "UK Fuels Card"),
+                primaryColor = "#EE3135",
+                stationTypes = listOf(StationType.SELF_SERVICE, StationType.UNMANNED, StationType.TRUCK_ONLY, StationType.HIGHWAY),
+                specialFeatures = listOf(Feature.HIGH_FLOW, Feature.FLEET_MANAGEMENT, Feature.CARD_ONLY),
+                websiteUrl = "https://www.keyfuels.co.uk"
+            )
+        )
+        
+        // UK Fuels - Outra grande rede no Reino Unido
+        networks.add(
+            FuelNetworkBrand(
+                code = "UKFUELS",
+                name = "UK Fuels",
+                logo = "ukfuels_logo.png",
+                countries = listOf("GB"),
+                paymentCards = listOf("UK Fuels Card", "Keyfuels Card"),
+                primaryColor = "#005AB3",
+                stationTypes = listOf(StationType.SELF_SERVICE, StationType.UNMANNED, StationType.MIXED, StationType.HIGHWAY),
+                specialFeatures = listOf(Feature.ADBLUE, Feature.FLEET_MANAGEMENT, Feature.APP_PAYMENT),
+                websiteUrl = "https://www.ukfuels.co.uk"
+            )
+        )
+    }
+}
+
+// Funções de extensão para adicionar dados das redes britânicas
+fun SelfServiceStationService.loadUKStations() {
+    // Keyfuels - Reino Unido (Inglaterra)
+    addStation(
+        SelfServiceFuelStation(
+            id = "keyfuels_gb_m1j30",
+            brand = "KEYFUELS",
+            location = Location(
+                latitude = 53.4808, 
+                longitude = -1.3122,
+                roadInfo = RoadInfo(
+                    roadName = "M1",
+                    exitNumber = "J30"
+                ),
+                directions = "M1 Junction 30, saída norte, siga para área de serviços"
+            ),
+            address = "M1 Junction 30, Sheffield, South Yorkshire, UK",
+            country = "GB",
+            services = StationServices(
+                selfService = true,
+                hasRoof = false,
+                highFlowPumps = true,
+                adBlue = true,
+                adBluePump = true,
+                truckWash = false,
+                airPump = true,
+                shopAvailable = false
+            ),
+            fuelTypes = listOf(
+                FuelType("DIESEL", "Diesel", true, 1.45, System.currentTimeMillis(), "GBP"),
+                FuelType("ADBLUE", "AdBlue", true, 0.72, System.currentTimeMillis(), "GBP")
+            ),
+            paymentMethods = listOf(
+                PaymentMethod(
+                    type = PaymentType.FUEL_CARD,
+                    networks = listOf("Keyfuels", "UK Fuels"),
+                    requiresRegistration = true
+                ),
+                PaymentMethod(
+                    type = PaymentType.CONTACTLESS,
+                    networks = listOf("VISA", "MASTERCARD"),
+                    requiresRegistration = false
+                )
+            ),
+            facilities = StationFacilities(
+                restrooms = false,
+                parking = true,
+                numberOfParkingSpots = 12,
+                overnightParking = true,
+                food = false,
+                wifi = false
+            ),
+            access = TruckAccess(
+                suitableForTrucks = true,
+                maxHeight = null,
+                maxWeight = null,
+                wideAccess = true,
+                easyEntry = true,
+                easyExit = true,
+                hasTrafficJams = false,
+                accessNotes = "Acesso direto da autoestrada, amplo para todos os tipos de caminhões"
+            ),
+            operatingHours = OperatingHours(
+                is24Hours = true
+            ),
+            reviews = listOf(
+                StationReview(
+                    rating = 5,
+                    comment = "Excelente para abastecer rapidamente, bombas de alto fluxo eficientes",
+                    date = System.currentTimeMillis() - (7L * 24 * 60 * 60 * 1000),
+                    driverType = "TRUCK_LONG_HAUL"
+                )
+            )
+        )
+    )
+
+    // UK Fuels - Reino Unido (Escócia)
+    addStation(
+        SelfServiceFuelStation(
+            id = "ukfuels_gb_ed01",
+            brand = "UKFUELS",
+            location = Location(
+                latitude = 55.9533, 
+                longitude = -3.1883,
+                roadInfo = RoadInfo(
+                    roadName = "A1",
+                    kilometer = 3.2
+                ),
+                directions = "A1 ao norte de Edimburgo, próximo ao porto de Leith"
+            ),
+            address = "Port of Leith, Edinburgh, Scotland, UK",
+            country = "GB",
+            services = StationServices(
+                selfService = true,
+                hasRoof = true,
+                highFlowPumps = true,
+                adBlue = true,
+                adBluePump = true,
+                truckWash = false,
+                airPump = true,
+                shopAvailable = false
+            ),
+            fuelTypes = listOf(
+                FuelType("DIESEL", "Diesel", true, 1.47, System.currentTimeMillis(), "GBP"),
+                FuelType("ADBLUE", "AdBlue", true, 0.75, System.currentTimeMillis(), "GBP")
+            ),
+            paymentMethods = listOf(
+                PaymentMethod(
+                    type = PaymentType.FUEL_CARD,
+                    networks = listOf("UK Fuels", "Keyfuels"),
+                    requiresRegistration = true
+                ),
+                PaymentMethod(
+                    type = PaymentType.MOBILE_APP,
+                    requiresRegistration = true
+                )
+            ),
+            facilities = StationFacilities(
+                restrooms = true,
+                parking = true,
+                numberOfParkingSpots = 8,
+                overnightParking = true,
+                food = false,
+                wifi = true
+            ),
+            access = TruckAccess(
+                suitableForTrucks = true,
+                maxHeight = null,
+                maxWeight = null,
+                wideAccess = true,
+                easyEntry = true,
+                easyExit = true,
+                hasTrafficJams = false,
+                accessNotes = "Localizado em área industrial próxima ao porto, bom acesso para caminhões"
+            ),
+            operatingHours = OperatingHours(
+                is24Hours = true
+            ),
+            reviews = listOf(
+                StationReview(
+                    rating = 4,
+                    comment = "Boa localização para quem trabalha no porto, sistema de App funciona bem",
+                    date = System.currentTimeMillis() - (14L * 24 * 60 * 60 * 1000),
+                    driverType = "TRUCK_REGIONAL"
+                )
+            )
+        )
+    )
+}

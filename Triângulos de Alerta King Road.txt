@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 300">
+  <!-- Fundo dividido -->
+  <rect x="0" y="0" width="300" height="300" fill="#ffee00" />
+  <rect x="300" y="0" width="300" height="300" fill="#ff0000" />
+  
+  <!-- Triângulo Amarelo de Alerta -->
+  <path d="M150,50 L250,230 L50,230 Z" fill="#111111" />
+  <path d="M150,90 L150,170 L150,170 Z" fill="#ffee00" stroke="#ffee00" stroke-width="18" stroke-linecap="round" />
+  <circle cx="150" cy="200" r="10" fill="#ffee00" />
+  
+  <!-- Triângulo Vermelho de Alerta -->
+  <path d="M450,50 L550,230 L350,230 Z" fill="#331111" />
+  <path d="M450,90 L450,170 L450,170 Z" fill="#ff0000" stroke="#ff0000" stroke-width="18" stroke-linecap="round" />
+  <circle cx="450" cy="200" r="10" fill="#ff0000" />
+  
+  <!-- Área de texto (opcional) -->
+  <rect x="0" y="240" width="300" height="60" fill="#ffee00" />
+  <rect x="300" y="240" width="300" height="60" fill="#ff0000" />
+  
+  <!-- Textos de exemplo -->
+  <text x="150" y="275" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#111111">ALERTA</text>
+  <text x="450" y="275" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#ffffff">PERIGO</text>
+</svg>

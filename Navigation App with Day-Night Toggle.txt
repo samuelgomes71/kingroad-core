@@ -1,0 +1,115 @@
+import React, { useState, useEffect } from 'react';
+import { Sun, Moon } from 'lucide-react';
+
+// Definição dos temas
+const themes = {
+  modern: {
+    dayColors: {
+      mapBackground: '#f0f0f0',
+      mapLand: '#e0e0e0',
+      mapWater: '#b3d4fc',
+      mapRoad: '#ffffff'
+    },
+    nightColors: {
+      mapBackground: '#1a1a1a',
+      mapLand: '#2d2d2d',
+      mapWater: '#1e3a5f',
+      mapRoad: '#333333'
+    },
+    surface: '#ffffff',
+    background: '#1a1a1a',
+    primary: '#4a90e2',
+    secondary: '#9b59b6'
+  }
+};
+
+const DayNightToggle = ({ isDayMode, onToggle, theme }) => {
+  return (
+    <button 
+      className="p-2 rounded-full transition-all duration-300"
+      style={{
+        backgroundColor: isDayMode ? theme.surface : theme.background,
+        border: `1px solid ${isDayMode ? theme.primary : theme.secondary}`
+      }}
+      onClick={onToggle}
+    >
+      {isDayMode ? (
+        <Sun className="text-yellow-500" size={24} />
+      ) : (
+        <Moon className="text-blue-400" size={24} />
+      )}
+    </button>
+  );
+};
+
+const MapDisplay = ({ isDayMode, theme, children }) => {
+  const colors = isDayMode ? theme.dayColors : theme.nightColors;
+
+  return (
+    <div 
+      className="relative w-full h-full transition-colors duration-500"
+      style={{ backgroundColor: colors.mapBackground }}
+    >
+      <div className="absolute inset-0">
+        {/* Terra */}
+        <div 
+          className="absolute inset-0"
+          style={{ backgroundColor: colors.mapLand }}
+        />
+        {/* Água */}
+        <div 
+          className="absolute bottom-0 left-0 right-0 h-1/3"
+          style={{ backgroundColor: colors.mapWater }}
+        />
+        {/* Estradas */}
+        <div 
+          className="absolute inset-x-0 top-1/2 h-8"
+          style={{ 
+            backgroundColor: colors.mapRoad,
+            boxShadow: isDayMode ? '0 0 10px rgba(0,0,0,0.1)' : 'none'
+          }}
+        />
+      </div>
+      {/* Interface sobreposta */}
+      {children}
+    </div>
+  );
+};
+
+const NavigationApp = () => {
+  const [isDayMode, setIsDayMode] = useState(true);
+  const [currentTheme] = useState('modern');
+
+  // Detectar hora do dia automaticamente
+  useEffect(() => {
+    const checkDayTime = () => {
+      const hour = new Date().getHours();
+      setIsDayMode(hour >= 6 && hour < 18);
+    };
+
+    checkDayTime();
+    const interval = setInterval(checkDayTime, 60000); // Checar a cada minuto
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="h-screen">
+      <MapDisplay 
+        isDayMode={isDayMode} 
+        theme={themes[currentTheme]}
+      >
+        {/* Controles de navegação */}
+        <div className="absolute top-4 right-4">
+          <DayNightToggle 
+            isDayMode={isDayMode}
+            onToggle={() => setIsDayMode(!isDayMode)}
+            theme={themes[currentTheme]}
+          />
+        </div>
+      </MapDisplay>
+    </div>
+  );
+};
+
+export default NavigationApp;

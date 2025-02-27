@@ -1,0 +1,205 @@
+import React, { useState, useEffect } from 'react';
+
+// Componente principal de alertas de chevron
+const ChevronAlert = ({ 
+  direction = 'right', // right, left, straight
+  distance = 80, // distância em metros
+  visible = false, // controla visibilidade do alerta
+  duration = 3000 // duração da animação em milissegundos
+}) => {
+  const [color, setColor] = useState('white');
+  
+  // Determina a cor com base na distância
+  useEffect(() => {
+    if (distance <= 40) {
+      setColor('amber');
+    } else {
+      setColor('white');
+    }
+  }, [distance]);
+  
+  // Determina a classe de animação baseada na direção
+  const getAnimationClass = () => {
+    switch(direction) {
+      case 'left':
+        return 'animate-chevron-right-to-left';
+      case 'right':
+        return 'animate-chevron-left-to-right';
+      case 'straight':
+        return 'animate-chevron-bottom-to-top';
+      default:
+        return 'animate-chevron-left-to-right';
+    }
+  };
+  
+  // Se o alerta não estiver visível, não renderiza nada
+  if (!visible) return null;
+  
+  return (
+    <div className="fixed bottom-0 left-0 w-full z-50 overflow-hidden">
+      <div className={`flex items-center justify-center w-full h-16 ${getAnimationClass()}`}>
+        {/* Renderiza 7 chevrons para cobrir a largura da tela */}
+        {[...Array(7)].map((_, index) => (
+          <ChevronIcon 
+            key={index} 
+            direction={direction} 
+            color={color} 
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Componente de ícone chevron individual
+const ChevronIcon = ({ direction, color }) => {
+  // Determina a rotação baseada na direção
+  const getRotation = () => {
+    switch(direction) {
+      case 'left':
+        return 'rotate-180';
+      case 'right':
+        return '';
+      case 'straight':
+        return 'rotate-90';
+      default:
+        return '';
+    }
+  };
+  
+  // Determina a cor de preenchimento
+  const getFill = () => {
+    switch(color) {
+      case 'amber':
+        return 'fill-amber-400';
+      case 'white':
+      default:
+        return 'fill-white';
+    }
+  };
+  
+  return (
+    <svg 
+      className={`w-16 h-16 ${getRotation()} ${getFill()} opacity-70`}
+      viewBox="0 0 24 24" 
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M9.7 6L8.3 7.4l4.6 4.6-4.6 4.6 1.4 1.4 6-6z" />
+    </svg>
+  );
+};
+
+// Componente de demonstração que mostra o funcionamento dos chevrons
+const ChevronAlertDemo = () => {
+  const [showAlert, setShowAlert] = useState(false);
+  const [direction, setDirection] = useState('right');
+  const [distance, setDistance] = useState(80);
+  
+  // Função para disparar um alerta
+  const triggerAlert = (dir, dist) => {
+    setDirection(dir);
+    setDistance(dist);
+    setShowAlert(true);
+    
+    // Esconde o alerta após a duração especificada
+    setTimeout(() => {
+      setShowAlert(false);
+    }, 3000);
+  };
+  
+  return (
+    <div className="flex flex-col h-screen bg-gray-900 text-white">
+      {/* Área de simulação da navegação */}
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-6">King Road GPS - Simulação de Alertas</h1>
+          <p className="mb-4">Clique nos botões para simular diferentes alertas</p>
+          
+          <div className="flex justify-center space-x-4 mb-8">
+            <button 
+              onClick={() => triggerAlert('right', 80)} 
+              className="bg-blue-600 px-4 py-2 rounded"
+            >
+              Saída à Direita (80m)
+            </button>
+            <button 
+              onClick={() => triggerAlert('right', 40)} 
+              className="bg-yellow-600 px-4 py-2 rounded"
+            >
+              Saída à Direita (40m)
+            </button>
+          </div>
+          
+          <div className="flex justify-center space-x-4 mb-8">
+            <button 
+              onClick={() => triggerAlert('left', 80)} 
+              className="bg-blue-600 px-4 py-2 rounded"
+            >
+              Saída à Esquerda (80m)
+            </button>
+            <button 
+              onClick={() => triggerAlert('left', 40)} 
+              className="bg-yellow-600 px-4 py-2 rounded"
+            >
+              Saída à Esquerda (40m)
+            </button>
+          </div>
+          
+          <div className="flex justify-center space-x-4">
+            <button 
+              onClick={() => triggerAlert('straight', 80)} 
+              className="bg-blue-600 px-4 py-2 rounded"
+            >
+              Seguir em Frente (80m)
+            </button>
+            <button 
+              onClick={() => triggerAlert('straight', 40)} 
+              className="bg-yellow-600 px-4 py-2 rounded"
+            >
+              Seguir em Frente (40m)
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      {/* Componente de alerta de chevron */}
+      <ChevronAlert 
+        direction={direction} 
+        distance={distance} 
+        visible={showAlert} 
+      />
+      
+      {/* CSS para animações */}
+      <style jsx>{`
+        @keyframes slideLeftToRight {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        
+        @keyframes slideRightToLeft {
+          0% { transform: translateX(100%); }
+          100% { transform: translateX(-100%); }
+        }
+        
+        @keyframes slideBottomToTop {
+          0% { transform: translateY(100%); }
+          100% { transform: translateY(-100%); }
+        }
+        
+        .animate-chevron-left-to-right {
+          animation: slideLeftToRight 1.5s linear;
+        }
+        
+        .animate-chevron-right-to-left {
+          animation: slideRightToLeft 1.5s linear;
+        }
+        
+        .animate-chevron-bottom-to-top {
+          animation: slideBottomToTop 1.5s linear;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default ChevronAlertDemo;

@@ -1,0 +1,196 @@
+import React, { useState } from 'react';
+import { 
+  MapPin, 
+  Star, 
+  Search, 
+  X, 
+  Settings,
+  Store,
+  Coffee 
+} from 'lucide-react';
+
+const POIIconManager = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedPOI, setSelectedPOI] = useState(null);
+
+  // Biblioteca de ícones oficiais
+  const officialIcons = [
+    {
+      id: 'flyingj',
+      name: 'Flying J',
+      category: 'truck_stop',
+      color: '#0066CC',
+      keywords: ['pilot', 'truck stop', 'fuel']
+    },
+    {
+      id: 'loves',
+      name: "Love's",
+      category: 'truck_stop',
+      color: '#E31837',
+      keywords: ['truck stop', 'fuel']
+    },
+    {
+      id: 'mcdonalds',
+      name: "McDonald's",
+      category: 'restaurant',
+      color: '#FFC72C',
+      keywords: ['food', 'fast food']
+    },
+    {
+      id: 'burgerking',
+      name: 'Burger King',
+      category: 'restaurant',
+      color: '#D62300',
+      keywords: ['food', 'fast food']
+    }
+  ];
+
+  // Componente de Busca
+  const SearchBar = () => (
+    <div className="relative mb-4">
+      <input
+        type="text"
+        placeholder="Buscar ícone oficial..."
+        className="w-full bg-gray-50 border rounded-lg pl-10 pr-4 py-2"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+      <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+    </div>
+  );
+
+  // Filtro de Categorias
+  const CategoryFilter = () => (
+    <div className="flex overflow-x-auto space-x-2 mb-4">
+      {['all', 'truck_stop', 'restaurant'].map(category => (
+        <button
+          key={category}
+          onClick={() => setSelectedCategory(category)}
+          className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap ${
+            selectedCategory === category
+              ? 'bg-blue-100 text-blue-800'
+              : 'bg-gray-100 text-gray-600'
+          }`}
+        >
+          {category === 'all' ? 'Todos' : 
+           category === 'truck_stop' ? 'Truck Stops' : 
+           'Restaurantes'}
+        </button>
+      ))}
+    </div>
+  );
+
+  // Grade de Ícones
+  const IconGrid = () => {
+    const filteredIcons = officialIcons.filter(icon => {
+      const matchesSearch = icon.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          icon.keywords.some(k => k.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesCategory = selectedCategory === 'all' || icon.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+
+    return (
+      <div className="grid grid-cols-4 gap-4">
+        {filteredIcons.map(icon => (
+          <button
+            key={icon.id}
+            onClick={() => setSelectedPOI(icon)}
+            className={`p-3 rounded-lg border flex flex-col items-center ${
+              selectedPOI?.id === icon.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+            }`}
+          >
+            <div 
+              className="w-12 h-12 rounded-full flex items-center justify-center mb-2"
+              style={{ backgroundColor: icon.color }}
+            >
+              {icon.category === 'truck_stop' ? (
+                <Store className="text-white" size={24} />
+              ) : (
+                <Coffee className="text-white" size={24} />
+              )}
+            </div>
+            <span className="text-xs text-center font-medium text-gray-700">
+              {icon.name}
+            </span>
+          </button>
+        ))}
+      </div>
+    );
+  };
+
+  // Preview do Ícone Selecionado
+  const IconPreview = () => {
+    if (!selectedPOI) return null;
+
+    return (
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 rounded-t-xl shadow-lg">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center">
+            <div 
+              className="w-12 h-12 rounded-full flex items-center justify-center mr-3"
+              style={{ backgroundColor: selectedPOI.color }}
+            >
+              {selectedPOI.category === 'truck_stop' ? (
+                <Store className="text-white" size={24} />
+              ) : (
+                <Coffee className="text-white" size={24} />
+              )}
+            </div>
+            <div>
+              <h3 className="font-medium text-gray-800">{selectedPOI.name}</h3>
+              <p className="text-sm text-gray-600">
+                {selectedPOI.category === 'truck_stop' ? 'Truck Stop' : 'Restaurante'}
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setSelectedPOI(null)}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-2">
+            {selectedPOI.keywords.map((keyword, index) => (
+              <span 
+                key={index}
+                className="px-2 py-1 bg-gray-100 rounded-full text-xs text-gray-600"
+              >
+                {keyword}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <button 
+          className="w-full mt-4 bg-blue-600 text-white py-2 rounded-lg font-medium"
+          onClick={() => {
+            // Aqui você implementaria a lógica para aplicar o ícone ao POI
+            setSelectedPOI(null);
+          }}
+        >
+          Usar este ícone
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <div className="p-4 bg-white rounded-lg shadow">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-bold text-gray-800">Ícones Oficiais</h2>
+        <Settings className="text-gray-400" size={20} />
+      </div>
+
+      <SearchBar />
+      <CategoryFilter />
+      <IconGrid />
+      <IconPreview />
+    </div>
+  );
+};
+
+export default POIIconManager;

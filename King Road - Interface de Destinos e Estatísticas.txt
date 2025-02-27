@@ -1,0 +1,412 @@
+import React, { useState, useEffect } from 'react';
+import { Clock, Truck, MapPin, Star, StarOff, Filter, Search, ArrowDown, ArrowUp } from 'lucide-react';
+
+const DestinationManagerUI = () => {
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [destinations, setDestinations] = useState([]);
+  const [filteredDestinations, setFilteredDestinations] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState('lastVisit');
+  const [sortOrder, setSortOrder] = useState('desc');
+  
+  // Filtros
+  const [filters, setFilters] = useState({
+    hasRestroom: null,
+    hasShower: null,
+    hasTruckParking: null,
+    allowsOvernight: null,
+    easyAccess: null
+  });
+  
+  // Dados de exemplo para destinos
+  const mockDestinations = [
+    {
+      id: 1,
+      name: "Centro de Distribuição Mercadona",
+      address: "Calle de la Industria, 45, Madrid",
+      coordinates: { lat: 40.5487, lng: -3.6430 },
+      favorite: true,
+      visits: [
+        { 
+          arrival: new Date('2023-12-15T08:30:00'), 
+          departure: new Date('2023-12-15T11:45:00'),
+          loadingTime: 195, // minutos
+          notes: "Fila longa. Levar todos os documentos em duplicata."
+        },
+        { 
+          arrival: new Date('2024-01-22T09:15:00'), 
+          departure: new Date('2024-01-22T10:30:00'),
+          loadingTime: 75,
+          notes: "Processo mais rápido desta vez."
+        }
+      ],
+      facilities: {
+        hasRestroom: true,
+        hasShower: false,
+        hasTruckParking: true,
+        allowsOvernight: false,
+        easyAccess: true
+      },
+      notes: "Entrada pela lateral. Documentação rigorosa."
+    },
+    {
+      id: 2,
+      name: "Lidl Centro Logístico",
+      address: "Carretera de Villaverde, Madrid",
+      coordinates: { lat: 40.3491, lng: -3.6011 },
+      favorite: false,
+      visits: [
+        { 
+          arrival: new Date('2023-11-05T14:20:00'), 
+          departure: new Date('2023-11-05T18:45:00'),
+          loadingTime: 265,
+          notes: "Atraso na descarga devido a problema no sistema."
+        }
+      ],
+      facilities: {
+        hasRestroom: true,
+        hasShower: true,
+        hasTruckParking: true,
+        allowsOvernight: true,
+        easyAccess: false
+      },
+      notes: "Requer manobras difíceis para estacionar."
+    }
+  ];
+  
+  // Inicialização
+  useEffect(() => {
+    // Carregar dados
+    setDestinations(mockDestinations);
+    setFilteredDestinations(mockDestinations);
+  }, []);
+  
+  // Filtrar e ordenar destinos
+  useEffect(() => {
+    let result = [...destinations];
+    
+    // Aplicar busca
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(dest => 
+        dest.name.toLowerCase().includes(term) || 
+        dest.address.toLowerCase().includes(term)
+      );
+    }
+    
+    // Aplicar filtros de facilidades
+    if (filters.hasRestroom !== null) {
+      result = result.filter(dest => dest.facilities.hasRestroom === filters.hasRestroom);
+    }
+    if (filters.hasShower !== null) {
+      result = result.filter(dest => dest.facilities.hasShower === filters.hasShower);
+    }
+    if (filters.hasTruckParking !== null) {
+      result = result.filter(dest => dest.facilities.hasTruckParking === filters.hasTruckParking);
+    }
+    if (filters.allowsOvernight !== null) {
+      result = result.filter(dest => dest.facilities.allowsOvernight === filters.allowsOvernight);
+    }
+    if (filters.easyAccess !== null) {
+      result = result.filter(dest => dest.facilities.easyAccess === filters.easyAccess);
+    }
+    
+    // Ordenar resultados
+    result.sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (sortBy) {
+        case 'name':
+          aValue = a.name;
+          bValue = b.name;
+          return sortOrder === 'asc' 
+            ? aValue.localeCompare(bValue)
+            : bValue.localeCompare(aValue);
+          
+        case 'lastVisit':
+          aValue = a.visits.length > 0 ? Math.max(...a.visits.map(v => v.arrival.getTime())) : 0;
+          bValue = b.visits.length > 0 ? Math.max(...b.visits.map(v => v.arrival.getTime())) : 0;
+          return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+          
+        case 'loadingTime':
+          aValue = a.visits.length > 0 
+            ? a.visits.reduce((acc, v) => acc + v.loadingTime, 0) / a.visits.length 
+            : 0;
+          bValue = b.visits.length > 0 
+            ? b.visits.reduce((acc, v) => acc + v.loadingTime, 0) / b.visits.length 
+            : 0;
+          return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+          
+        default:
+          return 0;
+      }
+    });
+    
+    setFilteredDestinations(result);
+  }, [destinations, searchTerm, filters, sortBy, sortOrder]);
+  
+  // Alternar favorito
+  const toggleFavorite = (id, event) => {
+    event.stopPropagation();
+    setDestinations(prev => 
+      prev.map(dest => 
+        dest.id === id ? {...dest, favorite: !dest.favorite} : dest
+      )
+    );
+  };
+  
+  // Formatar data
+  const formatDate = (date) => {
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+  };
+  
+  // Obter informações de tempo da última visita
+  const getVisitTimeInfo = (visits) => {
+    if (!visits || visits.length === 0) return "Sem visitas registradas";
+    
+    // Pegar a visita mais recente
+    const latestVisit = [...visits].sort((a, b) => 
+      new Date(b.arrival) - new Date(a.arrival)
+    )[0];
+    
+    // Calcular o tempo de carga/descarga em formato legível
+    const loadingTime = latestVisit.loadingTime;
+    let timeText = '';
+    
+    if (loadingTime >= 60) {
+      const hours = Math.floor(loadingTime / 60);
+      const minutes = loadingTime % 60;
+      timeText = `${hours}h${minutes > 0 ? ` ${minutes}min` : ''}`;
+    } else {
+      timeText = `${loadingTime} min`;
+    }
+    
+    return `Última visita: ${formatDate(latestVisit.arrival)} - Tempo: ${timeText}`;
+  };
+  
+  // Limpar todos os filtros
+  const clearFilters = () => {
+    setFilters({
+      hasRestroom: null,
+      hasShower: null,
+      hasTruckParking: null,
+      allowsOvernight: null,
+      easyAccess: null
+    });
+    setSearchTerm('');
+  };
+
+  return (
+    <div className={`${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'} min-h-screen p-4`}>
+      {/* Cabeçalho */}
+      <div className="flex items-center justify-between mb-6 border-b border-gray-700 pb-3">
+        <div className="flex items-center">
+          <Truck className="w-6 h-6 mr-2 text-blue-500" />
+          <h1 className="text-xl font-bold">King Road - Histórico de Destinos</h1>
+        </div>
+      </div>
+      
+      {/* Barra de busca e filtros */}
+      <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg p-4 mb-6`}>
+        <div className="flex flex-col sm:flex-row gap-3 mb-3">
+          <div className="relative flex-grow">
+            <input
+              type="text"
+              placeholder="Buscar destinos..."
+              className={`pl-10 pr-4 py-2 w-full rounded-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'}`}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
+          </div>
+          
+          <button 
+            className={`px-4 py-2 rounded-lg flex items-center justify-center ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <Filter className="w-5 h-5 mr-2" />
+            Filtros
+          </button>
+          
+          <button 
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center"
+          >
+            <MapPin className="w-5 h-5 mr-2" />
+            Novo Destino
+          </button>
+        </div>
+        
+        {/* Opções de ordenação */}
+        <div className="flex items-center mb-3 text-sm">
+          <span className="mr-2">Ordenar por:</span>
+          <select 
+            className={`px-3 py-1 rounded ${isDarkMode ? 'bg-gray-700' : 'bg-white'}`}
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+          >
+            <option value="lastVisit">Data da última visita</option>
+            <option value="name">Nome</option>
+            <option value="loadingTime">Tempo médio de carga</option>
+          </select>
+          
+          <button 
+            className="ml-2 p-1 rounded hover:bg-gray-700"
+            onClick={() => setSortOrder(order => order === 'asc' ? 'desc' : 'asc')}
+          >
+            {sortOrder === 'asc' ? <ArrowUp className="w-5 h-5" /> : <ArrowDown className="w-5 h-5" />}
+          </button>
+          
+          <div className="ml-auto">
+            {(searchTerm || Object.values(filters).some(v => v !== null)) && (
+              <button 
+                className="text-blue-400 hover:text-blue-300 flex items-center"
+                onClick={clearFilters}
+              >
+                Limpar filtros
+              </button>
+            )}
+          </div>
+        </div>
+        
+        {/* Filtros expandidos */}
+        {showFilters && (
+          <div className="p-3 bg-gray-700 rounded-lg mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="text-sm font-medium mb-1 block">Banheiros</label>
+              <div className="flex">
+                <button 
+                  className={`flex-1 py-1 px-2 rounded-l border border-gray-600 ${filters.hasRestroom === true ? 'bg-blue-600' : 'bg-gray-700'}`}
+                  onClick={() => setFilters(prev => ({...prev, hasRestroom: prev.hasRestroom === true ? null : true}))}
+                >
+                  Sim
+                </button>
+                <button 
+                  className={`flex-1 py-1 px-2 rounded-r border border-gray-600 ${filters.hasRestroom === false ? 'bg-blue-600' : 'bg-gray-700'}`}
+                  onClick={() => setFilters(prev => ({...prev, hasRestroom: prev.hasRestroom === false ? null : false}))}
+                >
+                  Não
+                </button>
+              </div>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-1 block">Duchas</label>
+              <div className="flex">
+                <button 
+                  className={`flex-1 py-1 px-2 rounded-l border border-gray-600 ${filters.hasShower === true ? 'bg-blue-600' : 'bg-gray-700'}`}
+                  onClick={() => setFilters(prev => ({...prev, hasShower: prev.hasShower === true ? null : true}))}
+                >
+                  Sim
+                </button>
+                <button 
+                  className={`flex-1 py-1 px-2 rounded-r border border-gray-600 ${filters.hasShower === false ? 'bg-blue-600' : 'bg-gray-700'}`}
+                  onClick={() => setFilters(prev => ({...prev, hasShower: prev.hasShower === false ? null : false}))}
+                >
+                  Não
+                </button>
+              </div>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-1 block">Estacionamento</label>
+              <div className="flex">
+                <button 
+                  className={`flex-1 py-1 px-2 rounded-l border border-gray-600 ${filters.hasTruckParking === true ? 'bg-blue-600' : 'bg-gray-700'}`}
+                  onClick={() => setFilters(prev => ({...prev, hasTruckParking: prev.hasTruckParking === true ? null : true}))}
+                >
+                  Sim
+                </button>
+                <button 
+                  className={`flex-1 py-1 px-2 rounded-r border border-gray-600 ${filters.hasTruckParking === false ? 'bg-blue-600' : 'bg-gray-700'}`}
+                  onClick={() => setFilters(prev => ({...prev, hasTruckParking: prev.hasTruckParking === false ? null : false}))}
+                >
+                  Não
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {/* Lista de destinos */}
+      <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg p-4 mb-6`}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-medium">Seus Destinos</h2>
+          <div className="text-sm text-gray-400">
+            {filteredDestinations.length} de {destinations.length} destinos
+          </div>
+        </div>
+        
+        {filteredDestinations.length > 0 ? (
+          <div className="space-y-4">
+            {filteredDestinations.map(destination => (
+              <div 
+                key={destination.id}
+                className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} cursor-pointer transition-colors`}
+              >
+                <div className="flex justify-between">
+                  <div className="flex-grow">
+                    <div className="flex items-start">
+                      <h3 className="text-lg font-bold">{destination.name}</h3>
+                      <button
+                        className="ml-2 text-gray-400 hover:text-yellow-500"
+                        onClick={(e) => toggleFavorite(destination.id, e)}
+                      >
+                        {destination.favorite ? (
+                          <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                        ) : (
+                          <StarOff className="w-5 h-5" />
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-sm text-gray-400">{destination.address}</p>
+                  </div>
+                </div>
+                
+                <div className="mt-3 text-sm text-gray-400">
+                  <div className="flex items-center">
+                    <Clock className="w-4 h-4 mr-1" />
+                    {getVisitTimeInfo(destination.visits)}
+                  </div>
+                </div>
+                
+                <div className="mt-2 flex justify-end">
+                  <button 
+                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-white text-sm"
+                  >
+                    Criar rota
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <MapPin className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p>Nenhum destino encontrado</p>
+            <p className="text-sm mt-1">Tente ajustar os filtros ou adicionar novos destinos</p>
+          </div>
+        )}
+      </div>
+      
+      {/* Instruções */}
+      <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg p-4`}>
+        <h2 className="text-lg font-medium mb-4">Como Usar</h2>
+        <div className="text-sm space-y-3">
+          <p>
+            O histórico de destinos do King Road registra automaticamente os locais onde você faz paradas, incluindo o tempo de carga/descarga e facilidades disponíveis.
+          </p>
+          <p>
+            Ao planejar uma rota para um destino já visitado, o sistema irá mostrar informações úteis como o tempo médio de permanência e características do local.
+          </p>
+          <p>
+            Você pode filtrar os destinos por características (banheiros, duchas, etc.) ou marcar seus destinos favoritos para acesso rápido.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DestinationManagerUI;

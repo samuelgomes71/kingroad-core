@@ -1,0 +1,265 @@
+data class TruckerLaundry(
+    val id: String,
+    val name: String,
+    val location: Location,
+    val locationType: LocationType,
+    val parkingDetails: ParkingDetails,
+    val truckAccess: TruckAccess,
+    val country: String,
+    val address: String,
+    val services: List<WashingService>,
+    val facilities: LaundryFacilities,
+    val operatingHours: OperatingHours,
+    val contact: ContactInfo,
+    val lastUpdate: Long = System.currentTimeMillis()
+)
+
+enum class LocationType {
+    TRUCK_STOP,          // Posto de combustível com estrutura para caminhões
+    REST_AREA,           // Área de descanso na rodovia
+    TRUCK_CENTER,        // Centro de apoio ao caminhoneiro
+    LOGISTICS_CENTER,    // Centro logístico
+    PORT_AREA,          // Área portuária
+    INDUSTRIAL_ZONE     // Zona industrial com acesso para caminhões
+}
+
+data class Location(
+    val latitude: Double,
+    val longitude: Double
+)
+
+data class ParkingDetails(
+    val totalTruckSpots: Int,
+    val currentAvailableSpots: Int,
+    val maxTruckLength: Double, // em metros
+    val maxHeight: Double,      // em metros
+    val isIlluminated: Boolean,
+    val isSecure: Boolean,
+    val hasOvernightParking: Boolean,
+    val parkingFee: ParkingFee?
+)
+
+data class ParkingFee(
+    val amount: Double,
+    val currency: String,
+    val period: String // "hour", "day", "night"
+)
+
+data class TruckAccess(
+    val hasEasyAccess: Boolean,
+    val restrictions: List<TruckRestriction>,
+    val accessInstructions: String,
+    val recommendedApproach: String
+)
+
+data class TruckRestriction(
+    val type: RestrictionType,
+    val value: String,
+    val description: String
+)
+
+enum class RestrictionType {
+    HEIGHT,
+    LENGTH,
+    WEIGHT,
+    TIME_WINDOW,
+    ROAD_TYPE
+}
+
+data class WashingService(
+    val type: String,
+    val capacity: String,      // ex: "20kg", "30kg"
+    val duration: Int,         // minutos
+    val price: Price,
+    val isAvailable: Boolean = true,
+    val supportsLargeItems: Boolean = false  // para itens grandes como cobertores de caminhão
+)
+
+data class Price(
+    val amount: Double,
+    val currency: String,
+    val includesDetergent: Boolean = false
+)
+
+data class LaundryFacilities(
+    val totalWashers: Int,
+    val totalDryers: Int,
+    val hasRestArea: Boolean = false,
+    val hasShowers: Boolean = false,
+    val hasRestroom: Boolean = false,
+    val hasWifi: Boolean = false,
+    val hasCafeteria: Boolean = false,
+    val hasDriversRoom: Boolean = false,
+    val acceptsCards: Boolean = false,
+    val hasChangeStation: Boolean = false
+)
+
+data class OperatingHours(
+    val weekday: Schedule,
+    val saturday: Schedule?,
+    val sunday: Schedule?,
+    val is24Hours: Boolean = false
+)
+
+data class Schedule(
+    val opening: String,  // formato "HH:mm"
+    val closing: String   // formato "HH:mm"
+)
+
+data class ContactInfo(
+    val phone: String?,
+    val whatsapp: String?,
+    val email: String?
+)
+
+class TruckerLaundryService(
+    private val vehiclePOIService: VehicleSpecificPOIService
+) {
+    private val laundries = mutableMapOf<String, TruckerLaundry>()
+
+    fun addLaundry(laundry: TruckerLaundry) {
+        // Verifica se a lavanderia atende os requisitos mínimos para caminhoneiros
+        if (isValidTruckerLaundry(laundry)) {
+            laundries[laundry.id] = laundry
+        }
+    }
+
+    private fun isValidTruckerLaundry(laundry: TruckerLaundry): Boolean {
+        return laundry.parkingDetails.totalTruckSpots >= 2 && // Mínimo de 2 vagas para caminhões
+               laundry.parkingDetails.maxTruckLength >= 18.0 && // Comprimento mínimo para carretas
+               laundry.facilities.hasRestroom && // Precisa ter banheiro
+               laundry.truckAccess.hasEasyAccess // Precisa ter acesso fácil para caminhões
+    }
+
+    fun getNearbyLaundries(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Double = 50.0,
+        vehicleConfig: VehicleConfiguration,
+        filters: LaundryFilters = LaundryFilters()
+    ): List<TruckerLaundry> {
+        // Validação de tipo de veículo
+        if (!vehiclePOIService.shouldShowPOI(POIType.TRUCKER_LAUNDRY, vehicleConfig)) {
+            return emptyList()
+        }
+
+        return laundries.values.filter { laundry ->
+            // Verifica distância
+            val distance = calculateDistance(
+                latitude, longitude,
+                laundry.location.latitude, laundry.location.longitude
+            )
+            
+            if (distance > radiusKm) return@filter false
+            
+            // Aplica filtros específicos para caminhoneiros
+            if (filters.minParkingSpots > 0 && 
+                laundry.parkingDetails.totalTruckSpots < filters.minParkingSpots) {
+                return@filter false
+            }
+            
+            if (filters.requiresOvernightParking && 
+                !laundry.parkingDetails.hasOvernightParking) {
+                return@filter false
+            }
+            
+            if (filters.requiresShowers && !laundry.facilities.hasShowers) {
+                return@filter false
+            }
+            
+            if (filters.maxTruckLength > 0 && 
+                laundry.parkingDetails.maxTruckLength < filters.maxTruckLength) {
+                return@filter false
+            }
+
+            true
+        }.sortedBy { laundry ->
+            calculateDistance(
+                latitude, longitude,
+                laundry.location.latitude, laundry.location.longitude
+            )
+        }
+    }
+
+    data class LaundryFilters(
+        val minParkingSpots: Int = 0,
+        val requiresOvernightParking: Boolean = false,
+        val requiresShowers: Boolean = false,
+        val maxTruckLength: Double = 0.0
+    )
+
+    private fun calculateDistance(
+        lat1: Double, lon1: Double,
+        lat2: Double, lon2: Double
+    ): Double {
+        val R = 6371.0 // Raio da Terra em km
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLon = Math.toRadians(lon2 - lon1)
+        val a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                Math.sin(dLon/2) * Math.sin(dLon/2)
+        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+        return R * c
+    }
+
+    // Exemplo de dados para teste
+    fun initializeTestData() {
+        addLaundry(
+            TruckerLaundry(
+                id = "truckstop_laundry_1",
+                name = "Truck Stop Laundry Services",
+                location = Location(45.5, -122.6),
+                locationType = LocationType.TRUCK_STOP,
+                parkingDetails = ParkingDetails(
+                    totalTruckSpots = 15,
+                    currentAvailableSpots = 8,
+                    maxTruckLength = 25.0,
+                    maxHeight = 4.5,
+                    isIlluminated = true,
+                    isSecure = true,
+                    hasOvernightParking = true,
+                    parkingFee = null
+                ),
+                truckAccess = TruckAccess(
+                    hasEasyAccess = true,
+                    restrictions = listOf(),
+                    accessInstructions = "Entrada pela lateral do posto",
+                    recommendedApproach = "Acesso pela rodovia BR-101"
+                ),
+                country = "BR",
+                address = "Rodovia BR-101, km 123",
+                services = listOf(
+                    WashingService(
+                        type = "Super Capacity",
+                        capacity = "25kg",
+                        duration = 60,
+                        price = Price(20.0, "BRL", true),
+                        supportsLargeItems = true
+                    )
+                ),
+                facilities = LaundryFacilities(
+                    totalWashers = 6,
+                    totalDryers = 6,
+                    hasRestArea = true,
+                    hasShowers = true,
+                    hasRestroom = true,
+                    hasWifi = true,
+                    hasCafeteria = true,
+                    hasDriversRoom = true,
+                    acceptsCards = true
+                ),
+                operatingHours = OperatingHours(
+                    weekday = Schedule("00:00", "23:59"),
+                    saturday = Schedule("00:00", "23:59"),
+                    sunday = Schedule("00:00", "23:59"),
+                    is24Hours = true
+                ),
+                contact = ContactInfo(
+                    phone = "+55 11 98765-4321",
+                    whatsapp = "+55 11 98765-4321",
+                    email = "laundry@truckstop.com"
+                )
+            )
+        )
+    }
+}

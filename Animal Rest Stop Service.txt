@@ -1,0 +1,452 @@
+data class AnimalRestStop(
+    val id: String,
+    val name: String,
+    val location: Location,
+    val country: String,
+    val address: String,
+    val type: RestStopType,
+    val animalTypes: List<AnimalType>,
+    val facilities: AnimalFacilities,
+    val capacity: AnimalCapacity,
+    val veterinaryService: VeterinaryService,
+    val truckFacilities: TruckFacilities,
+    val operatingHours: OperatingHours,
+    val contact: ContactInfo,
+    val regulations: List<Regulation>,
+    val currentStatus: StopStatus,
+    val certifications: List<Certification>,
+    val lastUpdate: Long = System.currentTimeMillis()
+)
+
+enum class RestStopType {
+    OFFICIAL_CONTROL_POST,  // EU: Postos de controle oficiais
+    BOITEL,                // Brasil: Boitel tradicional
+    LIVESTOCK_STATION,     // Austrália/NZ: Estações de gado
+    FEEDLOT_STOP,         // EUA: Paradas com confinamento
+    STAGING_POINT         // Canadá: Pontos de parada regulamentados
+}
+
+data class Location(
+    val latitude: Double,
+    val longitude: Double,
+    val accessRoutes: List<AccessRoute>,
+    val elevation: Double  // importante para condições climáticas
+)
+
+data class AccessRoute(
+    val name: String,
+    val type: RouteType,
+    val restrictions: List<RouteRestriction>,
+    val recommendedForTrucks: Boolean,
+    val instructions: String
+)
+
+data class AnimalType(
+    val species: String,
+    val specificRequirements: List<String>,
+    val separationRequired: Boolean,
+    val restrictedSpecies: List<String>  // espécies que não podem compartilhar espaço
+)
+
+data class AnimalFacilities(
+    val pens: List<Pen>,
+    val feedingStations: Int,
+    val wateringSystems: WateringSystem,
+    val quarantineArea: Boolean,
+    val washingStations: Int,
+    val climatizedAreas: Boolean,
+    val specialEquipment: List<Equipment>
+)
+
+data class Pen(
+    val id: String,
+    val size: Double,        // metros quadrados
+    val capacity: Int,       // número de animais
+    val type: PenType,
+    val features: List<PenFeature>,
+    val currentOccupancy: Int = 0,
+    val lastCleaning: Long,
+    val status: PenStatus
+)
+
+enum class PenType {
+    CATTLE,
+    HORSE,
+    SHEEP,
+    MIXED_LARGE,
+    ISOLATION
+}
+
+enum class PenFeature {
+    COVERED,
+    HEATED,
+    VENTILATED,
+    RUBBER_FLOOR,
+    ANTISLIP_SURFACE,
+    VIDEO_MONITORED
+}
+
+data class WateringSystem(
+    val type: String,
+    val pointsPerPen: Int,
+    val automaticRefill: Boolean,
+    val waterQualityMonitoring: Boolean
+)
+
+data class Equipment(
+    val name: String,
+    val purpose: String,
+    val quantity: Int,
+    val lastMaintenance: Long
+)
+
+data class AnimalCapacity(
+    val totalCapacity: Map<String, Int>,  // por tipo de animal
+    val currentOccupancy: Map<String, Int>,
+    val reservationRequired: Boolean,
+    val minimumStayHours: Int,
+    val maximumStayHours: Int
+)
+
+data class VeterinaryService(
+    val onSiteVet: Boolean,
+    val availableHours: Schedule,
+    val emergencyContact: String,
+    val services: List<String>,
+    val certifications: List<String>
+)
+
+data class TruckFacilities(
+    val parkingSpots: Int,
+    val truckWashStation: Boolean,
+    val driverRestArea: Boolean,
+    val loadingDocks: Int,
+    val automaticDisinfection: Boolean
+)
+
+data class OperatingHours(
+    val reception: Schedule,
+    val loadingHours: Schedule,
+    val veterinaryHours: Schedule,
+    val is24Hours: Boolean = false
+)
+
+data class Schedule(
+    val weekday: TimeRange,
+    val saturday: TimeRange?,
+    val sunday: TimeRange?,
+    val holidays: TimeRange?
+)
+
+data class TimeRange(
+    val start: String,  // formato "HH:mm"
+    val end: String     // formato "HH:mm"
+)
+
+data class ContactInfo(
+    val mainOffice: String,
+    val emergency: String,
+    val veterinary: String,
+    val email: String?,
+    val website: String?
+)
+
+data class Regulation(
+    val type: RegulationType,
+    val description: String,
+    val required: Boolean
+)
+
+enum class RegulationType {
+    EU_REGULATION,
+    HEALTH_CERTIFICATE,
+    TRANSPORT_PERMIT,
+    VETERINARY_INSPECTION,
+    LOCAL_REQUIREMENT
+}
+
+data class StopStatus(
+    val isOperational: Boolean = true,
+    val availableSpaces: Map<String, Int>,
+    val currentTemperature: Double,
+    val weatherConditions: String,
+    val alerts: List<String>
+)
+
+data class Certification(
+    val name: String,
+    val issuedBy: String,
+    val validUntil: Long,
+    val scope: String
+)
+
+class AnimalRestStopService {
+    private val restStops = mutableMapOf<String, AnimalRestStop>()
+    
+    fun addRestStop(stop: AnimalRestStop) {
+        restStops[stop.id] = stop
+    }
+    
+    fun updateStatus(
+        stopId: String,
+        status: StopStatus
+    ) {
+        restStops[stopId]?.let { stop ->
+            restStops[stopId] = stop.copy(currentStatus = status)
+        }
+    }
+    
+    fun findStops(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Double = 100.0,
+        animalType: String? = null,
+        filters: StopFilters = StopFilters()
+    ): List<AnimalRestStop> {
+        return restStops.values.filter { stop ->
+            // Verifica distância
+            val distance = calculateDistance(
+                latitude, longitude,
+                stop.location.latitude, stop.location.longitude
+            )
+            
+            if (distance > radiusKm) return@filter false
+            
+            // Verifica tipo de animal
+            if (animalType != null && 
+                !stop.animalTypes.any { it.species == animalType }) {
+                return@filter false
+            }
+            
+            // Aplica filtros
+            if (filters.requiresVet && !stop.veterinaryService.onSiteVet) {
+                return@filter false
+            }
+            
+            if (filters.minimumCapacity > 0 && 
+                stop.animalCapacity.totalCapacity.values.sum() < filters.minimumCapacity) {
+                return@filter false
+            }
+            
+            if (filters.requiresCertification && 
+                !stop.certifications.any { cert -> 
+                    filters.certificationTypes.contains(cert.name) 
+                }) {
+                return@filter false
+            }
+
+            true
+        }.sortedBy { stop ->
+            calculateDistance(
+                latitude, longitude,
+                stop.location.latitude, stop.location.longitude
+            )
+        }
+    }
+
+    data class StopFilters(
+        val requiresVet: Boolean = false,
+        val minimumCapacity: Int = 0,
+        val requiresCertification: Boolean = false,
+        val certificationTypes: List<String> = listOf(),
+        val open24Hours: Boolean = false
+    )
+
+    // Exemplo de dados para teste
+    fun initializeTestData() {
+        // Brasil - Boitel
+        addRestStop(
+            AnimalRestStop(
+                id = "boitel_br_1",
+                name = "Boitel São Paulo",
+                location = Location(
+                    latitude = -23.5505,
+                    longitude = -46.6333,
+                    accessRoutes = listOf(
+                        AccessRoute(
+                            name = "Rodovia dos Bandeirantes",
+                            type = RouteType.MAIN_ENTRANCE,
+                            restrictions = listOf(),
+                            recommendedForTrucks = true,
+                            instructions = "Saída 98, acesso pela marginal"
+                        )
+                    ),
+                    elevation = 760.0
+                ),
+                country = "BR",
+                address = "Rodovia dos Bandeirantes, km 98",
+                type = RestStopType.BOITEL,
+                animalTypes = listOf(
+                    AnimalType(
+                        species = "Bovino",
+                        specificRequirements = listOf("Área mínima 2.5m² por animal"),
+                        separationRequired = true,
+                        restrictedSpecies = listOf()
+                    ),
+                    AnimalType(
+                        species = "Ovino",
+                        specificRequirements = listOf("Área mínima 1m² por animal"),
+                        separationRequired = true,
+                        restrictedSpecies = listOf()
+                    )
+                ),
+                facilities = AnimalFacilities(
+                    pens = listOf(
+                        Pen(
+                            id = "pen1",
+                            size = 500.0,
+                            capacity = 200,
+                            type = PenType.CATTLE,
+                            features = listOf(PenFeature.COVERED, PenFeature.ANTISLIP_SURFACE),
+                            currentOccupancy = 0,
+                            lastCleaning = System.currentTimeMillis(),
+                            status = PenStatus.AVAILABLE
+                        )
+                    ),
+                    feedingStations = 20,
+                    wateringSystems = WateringSystem(
+                        type = "Automático",
+                        pointsPerPen = 4,
+                        automaticRefill = true,
+                        waterQualityMonitoring = true
+                    ),
+                    quarantineArea = true,
+                    washingStations = 2,
+                    climatizedAreas = true,
+                    specialEquipment = listOf(
+                        Equipment(
+                            name = "Balança",
+                            purpose = "Pesagem",
+                            quantity = 1,
+                            lastMaintenance = System.currentTimeMillis()
+                        )
+                    )
+                ),
+                capacity = AnimalCapacity(
+                    totalCapacity = mapOf(
+                        "Bovino" to 500,
+                        "Ovino" to 1000
+                    ),
+                    currentOccupancy = mapOf(
+                        "Bovino" to 0,
+                        "Ovino" to 0
+                    ),
+                    reservationRequired = true,
+                    minimumStayHours = 6,
+                    maximumStayHours = 72
+                ),
+                veterinaryService = VeterinaryService(
+                    onSiteVet = true,
+                    availableHours = Schedule(
+                        weekday = TimeRange("08:00", "18:00"),
+                        saturday = TimeRange("08:00", "12:00"),
+                        sunday = null,
+                        holidays = null
+                    ),
+                    emergencyContact = "+55 11 99999-9999",
+                    services = listOf("Atendimento emergencial", "Vacinação", "Certificados sanitários"),
+                    certifications = listOf("CRMV-SP")
+                ),
+                truckFacilities = TruckFacilities(
+                    parkingSpots = 30,
+                    truckWashStation = true,
+                    driverRestArea = true,
+                    loadingDocks = 4,
+                    automaticDisinfection = true
+                ),
+                operatingHours = OperatingHours(
+                    reception = Schedule(
+                        weekday = TimeRange("00:00", "23:59"),
+                        saturday = TimeRange("00:00", "23:59"),
+                        sunday = TimeRange("00:00", "23:59"),
+                        holidays = TimeRange("00:00", "23:59")
+                    ),
+                    loadingHours = Schedule(
+                        weekday = TimeRange("06:00", "18:00"),
+                        saturday = TimeRange("06:00", "12:00"),
+                        sunday = null,
+                        holidays = null
+                    ),
+                    veterinaryHours = Schedule(
+                        weekday = TimeRange("08:00", "18:00"),
+                        saturday = TimeRange("08:00", "12:00"),
+                        sunday = null,
+                        holidays = null
+                    ),
+                    is24Hours = true
+                ),
+                contact = ContactInfo(
+                    mainOffice = "+55 11 3333-3333",
+                    emergency = "+55 11 99999-9999",
+                    veterinary = "+55 11 98888-8888",
+                    email = "contato@boitelsp.com.br",
+                    website = "www.boitelsp.com.br"
+                ),
+                regulations = listOf(
+                    Regulation(
+                        type = RegulationType.HEALTH_CERTIFICATE,
+                        description = "GTA - Guia de Trânsito Animal",
+                        required = true
+                    )
+                ),
+                currentStatus = StopStatus(
+                    isOperational = true,
+                    availableSpaces = mapOf(
+                        "Bovino" to 500,
+                        "Ovino" to 1000
+                    ),
+                    currentTemperature = 25.0,
+                    weatherConditions = "Ensolarado",
+                    alerts = listOf()
+                ),
+                certifications = listOf(
+                    Certification(
+                        name = "Certificação MAPA",
+                        issuedBy = "Ministério da Agricultura",
+                        validUntil = System.currentTimeMillis() + (365L * 24 * 60 * 60 * 1000),
+                        scope = "Manejo de animais vivos"
+                    )
+                )
+            )
+        )
+
+        // União Europeia - Posto de Controle
+        addRestStop(
+            AnimalRestStop(
+                id = "eu_control_1",
+                name = "EU Control Post Berlin",
+                location = Location(
+                    latitude = 52.5200,
+                    longitude = 13.4050,
+                    accessRoutes = listOf(
+                        AccessRoute(
+                            name = "A10",
+                            type = RouteType.MAIN_ENTRANCE,
+                            restrictions = listOf(),
+                            recommendedForTrucks = true,
+                            instructions = "Exit 25, follow signs to Control Post"
+                        )
+                    ),
+                    elevation = 34.0
+                ),
+                country = "DE",
+                address = "Kontrollstelle Berlin, A10 Exit 25",
+                type = RestStopType.OFFICIAL_CONTROL_POST,
+                animalTypes = listOf(
+                    AnimalType(
+                        species = "Cattle",
+                        specificRequirements = listOf("EU Regulation 1/2005 compliant space"),
+                        separationRequired = true,
+                        restrictedSpecies = listOf()
+                    )
+                ),
+                facilities = AnimalFacilities(
+                    pens = listOf(
+                        Pen(
+                            id = "eu_pen1",
+                            size = 600.0,
+                            capacity = 200,
+                            type = PenType.CATTLE,
+                            features = listOf(
+                                PenFeature.COVERED,
+                                PenFe

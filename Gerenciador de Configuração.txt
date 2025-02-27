@@ -1,0 +1,157 @@
+// SettingsManager.kt
+class SettingsManager(
+    private val storageService: StorageService,
+    private val routeService: RouteService
+) {
+    data class UnitSettings(
+        val type: UnitType,
+        val isAutomatic: Boolean = false
+    )
+
+    enum class UnitType {
+        METRIC,             // km/m/t
+        IMPERIAL_METRIC,    // mi/yd/t
+        IMPERIAL           // mi/ft/lb
+    }
+
+    data class FuelSettings(
+        val type: FuelType,
+        val searchRadius: Int = 50 // km or mi
+    )
+
+    enum class FuelType {
+        GASOLINE,
+        DIESEL,
+        LPG_PROPANE,
+        CNG,
+        ETHANOL
+    }
+
+    data class VehicleProfile(
+        val type: VehicleType = VehicleType.TRUCK,
+        val dimensions: VehicleDimensions,
+        val cargo: CargoType = CargoType.STANDARD,
+        val axles: Int = 5,
+        val fuelType: FuelType = FuelType.DIESEL
+    )
+
+    data class VehicleDimensions(
+        val weight: Double, // tons
+        val height: Double, // meters
+        val width: Double,  // meters
+        val length: Double  // meters
+    ) {
+        fun toImperial(): ImperialDimensions {
+            return ImperialDimensions(
+                weight = weight * 2204.62,    // tons to pounds
+                height = height * 3.28084,    // meters to feet
+                width = width * 3.28084,      // meters to feet
+                length = length * 3.28084     // meters to feet
+            )
+        }
+    }
+
+    data class ImperialDimensions(
+        val weight: Double, // pounds
+        val height: Double, // feet
+        val width: Double,  // feet
+        val length: Double  // feet
+    )
+
+    enum class CargoType {
+        STANDARD,
+        HAZMAT,
+        OVERSIZED,
+        REFRIGERATED
+    }
+
+    // Salvar configurações
+    suspend fun saveUnitSettings(settings: UnitSettings) {
+        storageService.saveSettings("units", settings)
+        updateRouteCalculations()
+    }
+
+    suspend fun saveFuelSettings(settings: FuelSettings) {
+        storageService.saveSettings("fuel", settings)
+        updatePOIFilters()
+    }
+
+    suspend fun saveVehicleProfile(profile: VehicleProfile) {
+        storageService.saveSettings("vehicle", profile)
+        updateRouteRestrictions()
+    }
+
+    // Carregar configurações
+    suspend fun loadUnitSettings(): UnitSettings {
+        return storageService.loadSettings("units") ?: UnitSettings(
+            type = if (isMetricCountry()) UnitType.METRIC else UnitType.IMPERIAL,
+            isAutomatic = true
+        )
+    }
+
+    suspend fun loadFuelSettings(): FuelSettings {
+        return storageService.loadSettings("fuel") ?: FuelSettings(
+            type = FuelType.DIESEL
+        )
+    }
+
+    suspend fun loadVehicleProfile(): VehicleProfile {
+        return storageService.loadSettings("vehicle") ?: VehicleProfile(
+            dimensions = VehicleDimensions(
+                weight = 17.0,
+                height = 4.5,
+                width = 2.6,
+                length = 16.5
+            )
+        )
+    }
+
+    // Atualizar cálculos de rota
+    private suspend fun updateRouteCalculations() {
+        val units = loadUnitSettings()
+        val vehicle = loadVehicleProfile()
+        
+        routeService.updateCalculationParameters(
+            units = units,
+            vehicle = vehicle
+        )
+    }
+
+    // Atualizar filtros de POI
+    private suspend fun updatePOIFilters() {
+        val fuel = loadFuelSettings()
+        val vehicle = loadVehicleProfile()
+        
+        routeService.updatePOIFilters(
+            fuelType = fuel.type,
+            vehicleType = vehicle.type,
+            searchRadius = fuel.searchRadius
+        )
+    }
+
+    // Atualizar restrições de rota
+    private suspend fun updateRouteRestrictions() {
+        val vehicle = loadVehicleProfile()
+        
+        routeService.updateRestrictions(
+            dimensions = vehicle.dimensions,
+            cargoType = vehicle.cargo
+        )
+    }
+
+    private fun isMetricCountry(): Boolean {
+        // Lista de países que usam sistema imperial
+        val imperialCountries = setOf("US", "MM", "LR")
+        
+        // Obter país atual
+        val currentCountry = Locale.getDefault().country
+        
+        return !imperialCountries.contains(currentCountry)
+    }
+
+    companion object {
+        const val DEFAULT_SEARCH_RADIUS = 50
+        const val MAX_VEHICLE_WEIGHT = 80.0 // tons
+        const val MAX_VEHICLE_HEIGHT = 5.0  // meters
+    }
+}

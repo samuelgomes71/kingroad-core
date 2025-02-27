@@ -1,0 +1,137 @@
+data class EmployerProfile(
+    val id: String,
+    val companyName: String,
+    val verificationStatus: Boolean,
+    val locations: List<String>,
+    val fleetSize: Int,
+    val routeTypes: List<String>,
+    val benefits: List<String>,
+    val recruitmentStatus: Boolean = false
+)
+
+class DriverRecruitmentSystem {
+    fun searchQualifiedDrivers(
+        criteria: SearchCriteria,
+        region: String? = null,
+        minimumScore: Double = 85.0
+    ): List<DriverMatch> {
+        return availableDrivers
+            .filter { driver ->
+                driver.careerPreferences.isOpenToOffers &&
+                matchesCriteria(driver, criteria) &&
+                (region == null || driver.personalInfo.region == region) &&
+                driver.safetyStats.currentMonthStats.safetyScore >= minimumScore
+            }
+            .map { driver ->
+                DriverMatch(
+                    driver = driver,
+                    matchScore = calculateMatchScore(driver, criteria),
+                    achievements = getRelevantAchievements(driver),
+                    safetyRecord = generateSafetyRecord(driver)
+                )
+            }
+            .sortedByDescending { it.matchScore }
+    }
+
+    private fun matchesCriteria(driver: DriverProfile, criteria: SearchCriteria): Boolean {
+        return driver.professionalInfo.experienceTypes.any { it in criteria.requiredExperience } &&
+               driver.professionalInfo.licenseType == criteria.requiredLicense &&
+               driver.verificationStatus.isLicenseVerified &&
+               driver.verificationStatus.isIdentityVerified
+    }
+
+    private fun calculateMatchScore(driver: DriverProfile, criteria: SearchCriteria): Double {
+        var score = 0.0
+        
+        // Experiência relevante
+        score += (driver.yearsOfExperience.toDouble() / criteria.desiredExperience) * 30
+
+        // Pontuação de segurança
+        score += (driver.safetyStats.currentMonthStats.safetyScore / 100.0) * 40
+
+        // Verificações
+        if (driver.verificationStatus.isEmployerVerified) score += 10
+        if (driver.verificationStatus.isLicenseVerified) score += 10
+        if (driver.verificationStatus.isIdentityVerified) score += 10
+
+        return score.coerceIn(0.0, 100.0)
+    }
+
+    data class DriverMatch(
+        val driver: DriverProfile,
+        val matchScore: Double,
+        val achievements: List<Achievement>,
+        val safetyRecord: SafetyRecord
+    )
+
+    data class SafetyRecord(
+        val averageScore: Double,
+        val perfectMonths: Int,
+        val totalSafeHours: Double,
+        val lastIncident: Long?
+    )
+
+    data class SearchCriteria(
+        val requiredExperience: List<String>,
+        val desiredExperience: Double,
+        val requiredLicense: String,
+        val preferredRegions: List<String>,
+        val routeTypes: List<String>
+    )
+}
+
+// Interface React para recrutamento
+import React, { useState } from 'react';
+import { Search, Award, Shield, Star } from 'lucide-react';
+
+const DriverRecruitmentComponent = () => {
+  const [searchCriteria, setSearchCriteria] = useState({
+    experience: [],
+    license: '',
+    regions: [],
+    routeTypes: []
+  });
+
+  const [searchResults, setSearchResults] = useState([]);
+
+  const DriverCard = ({ driver }) => (
+    <div className="bg-white rounded-lg shadow-lg p-4 mb-4">
+      <div className="flex justify-between items-start">
+        <div>
+          <h3 className="text-lg font-bold">{driver.personalInfo.name}</h3>
+          <p className="text-gray-600">{driver.personalInfo.region}</p>
+        </div>
+        <div className="flex items-center">
+          <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+            {driver.safetyStats.currentMonthStats.safetyScore.toFixed(1)}% Safety
+          </div>
+        </div>
+      </div>
+
+      {/* Achievements */}
+      <div className="flex space-x-2 mt-3">
+        {driver.achievements.map((achievement, index) => (
+          <div
+            key={index}
+            className="flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-sm"
+          >
+            <Award className="w-4 h-4 mr-1" />
+            {achievement.title}
+          </div>
+        ))}
+      </div>
+
+      {/* Experience & Verification */}
+      <div className="mt-4 grid grid-cols-2 gap-4">
+        <div className="flex items-center">
+          <Shield className="w-4 h-4 text-green-500 mr-2" />
+          <span>Verificado</span>
+        </div>
+        <div className="flex items-center">
+          <Star className="w-4 h-4 text-yellow-500 mr-2" />
+          <span>{driver.yearsOfExperience} anos de experiência</span>
+        </div>
+      </div>
+
+      {/* Contact Button */}
+      <button className="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-l

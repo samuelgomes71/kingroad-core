@@ -1,0 +1,180 @@
+data class SearchResult(
+    val name: String,
+    val address: String,
+    val coordinates: Coordinates,
+    val placeId: String,
+    val placeType: PlaceType,
+    val truckAccess: TruckAccess?,
+    val satellitePreview: String,
+    val rating: Double?,
+    val reviews: List<Review>
+)
+
+data class Coordinates(
+    val latitude: Double,
+    val longitude: Double
+)
+
+data class TruckAccess(
+    val entranceLocation: Coordinates,
+    val truckParkingAvailable: Boolean,
+    val maxHeight: Double?,
+    val maxWeight: Double?,
+    val instructions: String?,
+    val photos: List<String>
+)
+
+enum class PlaceType {
+    CUSTOMER,
+    WAREHOUSE,
+    DISTRIBUTION_CENTER,
+    FACTORY,
+    PORT,
+    OTHER
+}
+
+data class Review(
+    val rating: Int,
+    val comment: String,
+    val truckRelated: Boolean,
+    val date: Long
+)
+
+class IntegratedSearchSystem {
+    private val api = GooglePlacesApi()
+    private val imageCache = ImageCache()
+    private val tripSharing = TripSharing()
+
+    suspend fun searchLocation(query: String): List<SearchResult> {
+        // Busca no Google Places API
+        val results = api.searchPlaces(query)
+        
+        return results.map { place ->
+            SearchResult(
+                name = place.name,
+                address = place.address,
+                coordinates = place.coordinates,
+                placeId = place.id,
+                placeType = determinePlaceType(place),
+                truckAccess = findTruckAccess(place),
+                satellitePreview = place.satelliteViewUrl,
+                rating = place.rating,
+                reviews = place.reviews.filter { it.truckRelated }
+            )
+        }
+    }
+
+    suspend fun getSatelliteView(coordinates: Coordinates, zoom: Int = 18): SatelliteView {
+        return api.getSatelliteImage(
+            latitude = coordinates.latitude,
+            longitude = coordinates.longitude,
+            zoom = zoom
+        )
+    }
+
+    suspend fun shareTripProgress(
+        tripId: String,
+        shareMethod: ShareMethod,
+        recipientInfo: String
+    ): ShareResult {
+        val tripDetails = tripSharing.getTripDetails(tripId)
+        
+        return when (shareMethod) {
+            ShareMethod.WHATSAPP -> {
+                tripSharing.shareViaWhatsApp(
+                    tripDetails = tripDetails,
+                    phoneNumber = recipientInfo
+                )
+            }
+            ShareMethod.EMAIL -> {
+                tripSharing.shareViaEmail(
+                    tripDetails = tripDetails,
+                    email = recipientInfo
+                )
+            }
+            ShareMethod.KING_ROAD -> {
+                tripSharing.shareViaKingRoad(
+                    tripDetails = tripDetails,
+                    userId = recipientInfo
+                )
+            }
+        }
+    }
+}
+
+class TripSharing {
+    fun getTripDetails(tripId: String): TripDetails {
+        return TripDetails(
+            tripId = tripId,
+            currentLocation = getCurrentLocation(),
+            destination = getDestination(),
+            estimatedArrival = calculateETA(),
+            routeProgress = getRouteProgress(),
+            lastUpdate = System.currentTimeMillis()
+        )
+    }
+
+    fun shareViaWhatsApp(tripDetails: TripDetails, phoneNumber: String): ShareResult {
+        val message = buildShareMessage(tripDetails)
+        val trackingLink = generateTrackingLink(tripDetails.tripId)
+        
+        return ShareResult(
+            success = true,
+            shareUrl = trackingLink,
+            message = message
+        )
+    }
+
+    fun shareViaEmail(tripDetails: TripDetails, email: String): ShareResult {
+        val emailBody = buildEmailBody(tripDetails)
+        val trackingLink = generateTrackingLink(tripDetails.tripId)
+        
+        return ShareResult(
+            success = true,
+            shareUrl = trackingLink,
+            message = emailBody
+        )
+    }
+
+    fun shareViaKingRoad(tripDetails: TripDetails, userId: String): ShareResult {
+        val inAppShare = createInAppShare(tripDetails, userId)
+        
+        return ShareResult(
+            success = true,
+            shareUrl = inAppShare.trackingUrl,
+            message = inAppShare.notificationMessage
+        )
+    }
+
+    private fun generateTrackingLink(tripId: String): String {
+        return "https://kingroad.app/track/$tripId"
+    }
+}
+
+data class TripDetails(
+    val tripId: String,
+    val currentLocation: Coordinates,
+    val destination: SearchResult,
+    val estimatedArrival: Long,
+    val routeProgress: Double,
+    val lastUpdate: Long
+)
+
+enum class ShareMethod {
+    WHATSAPP,
+    EMAIL,
+    KING_ROAD
+}
+
+data class ShareResult(
+    val success: Boolean,
+    val shareUrl: String,
+    val message: String
+)
+
+data class SatelliteView(
+    val imageUrl: String,
+    val zoom: Int,
+    val bearing: Double,
+    val tilt: Double
+)

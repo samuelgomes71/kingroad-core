@@ -1,0 +1,13 @@
+// Componente Mile Marker
+  const MileMarker = () => (
+    <div className="absolute left-0 top-1/4 w-16 bg-[#1E1E1E] bg-opacity-90 flex flex-col items-center py-4 rounded-r-lg">
+      <div className="text-white text-center">
+        <div className="font-bold text-sm">MILE</div>
+        <div className="text-2xl font-bold mt-1">127</div>
+        <div className="text-sm mt-1">KM</div>
+      </div>
+    </div>
+  );
+
+  // Barra lateral de alertas
+  const AlertSidebar = () => (

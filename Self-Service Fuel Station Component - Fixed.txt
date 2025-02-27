@@ -1,0 +1,530 @@
+import React, { useState } from 'react';
+import { 
+  Droplet, 
+  CreditCard, 
+  Truck, 
+  Clock, 
+  Star, 
+  Map, 
+  Navigation,
+  Filter,
+  AlertTriangle
+} from 'lucide-react';
+
+const BrandTag = ({ brand }) => {
+  const getBrandStyle = (brand) => {
+    switch (brand) {
+      case 'AS24':
+        return { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-300' };
+      case 'IDS':
+        return { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-300' };
+      case 'KEYFUELS':
+        return { bg: 'bg-rose-100', text: 'text-rose-800', border: 'border-rose-300' };
+      case 'UKFUELS':
+        return { bg: 'bg-indigo-100', text: 'text-indigo-800', border: 'border-indigo-300' };
+      default:
+        return { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-300' };
+    }
+  };
+
+  const style = getBrandStyle(brand);
+  
+  return (
+    <div className={`${style.bg} ${style.text} px-3 py-1 rounded-full text-sm font-medium border ${style.border}`}>
+      {brand}
+    </div>
+  );
+};
+
+const CurrencyIcon = ({ currency }) => {
+  return (
+    <span className="ml-1 text-xs">
+      {currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency}
+    </span>
+  );
+};
+
+const SelfServiceFuelStationPOI = ({ station, onSelectStation, onNavigate }) => {
+  return (
+    <div className="p-2">
+      <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-500">
+        <div className="flex justify-between items-center">
+          <div>
+            <BrandTag brand={station.brand} />
+            <p className="text-gray-600 text-sm mt-1 truncate">{station.address}</p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="text-xs px-2 py-1 rounded-full bg-gray-100">
+              {station.country}
+            </div>
+            {station.operatingHours.is24Hours && (
+              <div className="flex items-center text-xs text-green-700 bg-green-50 px-2 py-1 rounded-full">
+                <Clock className="w-3 h-3 mr-1" /> 24/7
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <div className="mt-3 flex justify-between">
+          <div className="space-y-1">
+            {station.fuelTypes.map((fuel, index) => (
+              <div key={index} className="flex items-center text-sm">
+                <span className="text-gray-600">{fuel.name}:</span>
+                <span className="ml-1 font-medium flex items-center">
+                  {fuel.price ? (
+                    <>
+                      {fuel.price.toFixed(2)}
+                      <CurrencyIcon currency={fuel.currency} />
+                    </>
+                  ) : 'N/A'}
+                </span>
+              </div>
+            ))}
+          </div>
+          
+          <div className="flex flex-col items-end space-y-1">
+            {station.services.highFlowPumps && (
+              <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full flex items-center">
+                <Droplet className="w-3 h-3 mr-1" /> High Flow
+              </span>
+            )}
+            {station.services.adBlue && (
+              <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center">
+                <Droplet className="w-3 h-3 mr-1" /> AdBlue
+              </span>
+            )}
+          </div>
+        </div>
+        
+        <div className="mt-3 flex flex-wrap gap-1">
+          {station.paymentMethods.map((payment, index) => (
+            <div key={index} className="text-xs bg-gray-100 px-2 py-1 rounded-full flex items-center">
+              <CreditCard className="w-3 h-3 mr-1" />
+              <span>
+                {payment.type === 'FUEL_CARD' 
+                  ? payment.networks[0]
+                  : payment.type.replace('_', ' ')}
+              </span>
+            </div>
+          ))}
+        </div>
+        
+        <div className="mt-3 flex space-x-2">
+          <button
+            onClick={() => onSelectStation(station)}
+            className="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-800 py-2 rounded flex items-center justify-center"
+          >
+            <Map className="w-4 h-4 mr-1" />
+            <span>Detalhes</span>
+          </button>
+          <button
+            onClick={() => onNavigate(station)}
+            className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded flex items-center justify-center"
+          >
+            <Navigation className="w-4 h-4 mr-1" />
+            <span>Navegar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SelfServiceFuelStations = () => {
+  const [stations, setStations] = useState([]);
+  const [selectedStation, setSelectedStation] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    brands: [],
+    requiresAdBlue: false,
+    requiresHighFlow: false,
+    open24Hours: true,
+    countries: []
+  });
+  
+  // Simulação de dados para demonstração
+  const mockStations = [
+    {
+      id: "as24_es_md01",
+      brand: "AS24",
+      address: "Autovía A-4, km 17.5, 28001 Madrid, España",
+      country: "ES",
+      services: {
+        selfService: true,
+        hasRoof: false,
+        highFlowPumps: true,
+        adBlue: true,
+        adBluePump: true
+      },
+      fuelTypes: [
+        {name: "Diesel", price: 1.35, currency: "EUR"},
+        {name: "AdBlue", price: 0.65, currency: "EUR"}
+      ],
+      paymentMethods: [
+        {type: "FUEL_CARD", networks: ["AS24", "DKV"]},
+        {type: "CREDIT_CARD"}
+      ],
+      operatingHours: {
+        is24Hours: true
+      },
+      reviews: [
+        {rating: 4}
+      ]
+    },
+    {
+      id: "ids_nl_rt01",
+      brand: "IDS",
+      address: "Maasvlakte 125, Rotterdam, Nederland",
+      country: "NL",
+      services: {
+        selfService: true,
+        hasRoof: false,
+        highFlowPumps: true,
+        adBlue: true
+      },
+      fuelTypes: [
+        {name: "Diesel", price: 1.42, currency: "EUR"},
+        {name: "AdBlue", price: 0.70, currency: "EUR"}
+      ],
+      paymentMethods: [
+        {type: "FUEL_CARD", networks: ["IDS", "DKV"]},
+        {type: "CONTACTLESS"}
+      ],
+      operatingHours: {
+        is24Hours: true
+      },
+      reviews: [
+        {rating: 5}
+      ]
+    },
+    {
+      id: "keyfuels_gb_m1j30",
+      brand: "KEYFUELS",
+      address: "M1 Junction 30, Sheffield, South Yorkshire, UK",
+      country: "GB",
+      services: {
+        selfService: true,
+        hasRoof: false,
+        highFlowPumps: true,
+        adBlue: true
+      },
+      fuelTypes: [
+        {name: "Diesel", price: 1.45, currency: "GBP"},
+        {name: "AdBlue", price: 0.72, currency: "GBP"}
+      ],
+      paymentMethods: [
+        {type: "FUEL_CARD", networks: ["Keyfuels", "UK Fuels"]},
+        {type: "CONTACTLESS"}
+      ],
+      operatingHours: {
+        is24Hours: true
+      },
+      reviews: [
+        {rating: 5}
+      ]
+    },
+    {
+      id: "ukfuels_gb_ed01",
+      brand: "UKFUELS",
+      address: "Port of Leith, Edinburgh, Scotland, UK",
+      country: "GB",
+      services: {
+        selfService: true,
+        hasRoof: true,
+        highFlowPumps: true,
+        adBlue: true
+      },
+      fuelTypes: [
+        {name: "Diesel", price: 1.47, currency: "GBP"},
+        {name: "AdBlue", price: 0.75, currency: "GBP"}
+      ],
+      paymentMethods: [
+        {type: "FUEL_CARD", networks: ["UK Fuels", "Keyfuels"]},
+        {type: "MOBILE_APP"}
+      ],
+      operatingHours: {
+        is24Hours: true
+      },
+      reviews: [
+        {rating: 4}
+      ]
+    }
+  ];
+  
+  // Componente de filtros
+  const FiltersPanel = () => (
+    <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="font-bold">Filtrar Postos</h3>
+        <button 
+          onClick={() => setShowFilters(false)}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          ✕
+        </button>
+      </div>
+      
+      <div className="space-y-3">
+        <div>
+          <label className="text-sm font-medium block mb-1">Marcas</label>
+          <div className="flex flex-wrap gap-2">
+            {["AS24", "IDS", "KEYFUELS", "UKFUELS"].map(brand => (
+              <div 
+                key={brand}
+                onClick={() => {
+                  setFilters(prev => {
+                    const newBrands = prev.brands.includes(brand)
+                      ? prev.brands.filter(b => b !== brand)
+                      : [...prev.brands, brand];
+                    return {...prev, brands: newBrands};
+                  });
+                }}
+                className={`px-3 py-1 rounded-full text-sm cursor-pointer ${
+                  filters.brands.includes(brand)
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                }`}
+              >
+                {brand}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium block mb-1">Países</label>
+          <div className="flex flex-wrap gap-2">
+            {["ES", "NL", "FR", "DE", "GB"].map(country => (
+              <div 
+                key={country}
+                onClick={() => {
+                  setFilters(prev => {
+                    const newCountries = prev.countries.includes(country)
+                      ? prev.countries.filter(c => c !== country)
+                      : [...prev.countries, country];
+                    return {...prev, countries: newCountries};
+                  });
+                }}
+                className={`px-3 py-1 rounded-full text-sm cursor-pointer ${
+                  filters.countries.includes(country)
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                }`}
+              >
+                {country}
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.requiresAdBlue}
+              onChange={e => setFilters({...filters, requiresAdBlue: e.target.checked})}
+              className="rounded text-blue-500"
+            />
+            <span>Com AdBlue</span>
+          </label>
+          
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.requiresHighFlow}
+              onChange={e => setFilters({...filters, requiresHighFlow: e.target.checked})}
+              className="rounded text-blue-500"
+            />
+            <span>Bombas High Flow</span>
+          </label>
+          
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.open24Hours}
+              onChange={e => setFilters({...filters, open24Hours: e.target.checked})}
+              className="rounded text-blue-500"
+            />
+            <span>Aberto 24h</span>
+          </label>
+        </div>
+        
+        <button
+          onClick={() => {
+            // Aplicar filtros
+            console.log("Aplicando filtros:", filters);
+            setShowFilters(false);
+          }}
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded mt-2"
+        >
+          Aplicar Filtros
+        </button>
+      </div>
+    </div>
+  );
+  
+  // Detalhes da estação
+  const StationDetails = ({ station, onClose, onNavigate }) => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-5">
+        <div className="flex justify-between items-start">
+          <div>
+            <div className="flex items-center mb-1">
+              <BrandTag brand={station.brand} />
+              <span className="ml-2 text-xs bg-gray-100 px-2 py-1 rounded">
+                {station.country}
+              </span>
+            </div>
+            <p className="text-gray-600">{station.address}</p>
+          </div>
+          <button 
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            ✕
+          </button>
+        </div>
+        
+        <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+          <h3 className="font-medium text-blue-800 mb-2">Combustíveis</h3>
+          <div className="grid grid-cols-2 gap-3">
+            {station.fuelTypes.map((fuel, index) => (
+              <div key={index} className="flex justify-between">
+                <span>{fuel.name}</span>
+                <span className="font-medium flex items-center">
+                  {fuel.price ? (
+                    <>
+                      {fuel.price.toFixed(2)}
+                      <CurrencyIcon currency={fuel.currency} />
+                    </>
+                  ) : 'N/A'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        <div className="mt-4 grid grid-cols-2 gap-4">
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <h3 className="font-medium mb-2">Pagamento</h3>
+            <ul className="space-y-1 text-sm">
+              {station.paymentMethods.map((payment, index) => (
+                <li key={index} className="flex items-center">
+                  <CreditCard className="w-3 h-3 mr-1 text-gray-500" />
+                  <span>
+                    {payment.type === 'FUEL_CARD' 
+                      ? payment.networks.join(', ')
+                      : payment.type.replace('_', ' ')}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <h3 className="font-medium mb-2">Serviços</h3>
+            <ul className="space-y-1 text-sm">
+              {station.services.highFlowPumps && (
+                <li className="flex items-center">
+                  <Droplet className="w-3 h-3 mr-1 text-green-500" />
+                  <span>High Flow</span>
+                </li>
+              )}
+              {station.services.adBlue && (
+                <li className="flex items-center">
+                  <Droplet className="w-3 h-3 mr-1 text-blue-500" />
+                  <span>AdBlue</span>
+                </li>
+              )}
+              {station.services.hasRoof && (
+                <li className="flex items-center">
+                  <AlertTriangle className="w-3 h-3 mr-1 text-green-500" />
+                  <span>Com Cobertura</span>
+                </li>
+              )}
+              {!station.services.hasRoof && (
+                <li className="flex items-center">
+                  <AlertTriangle className="w-3 h-3 mr-1 text-yellow-500" />
+                  <span>Sem Cobertura</span>
+                </li>
+              )}
+              {station.operatingHours.is24Hours && (
+                <li className="flex items-center">
+                  <Clock className="w-3 h-3 mr-1 text-gray-500" />
+                  <span>24/7</span>
+                </li>
+              )}
+            </ul>
+          </div>
+        </div>
+        
+        <div className="mt-4">
+          <h3 className="font-medium mb-2">Acesso para Caminhões</h3>
+          <div className="bg-yellow-50 text-yellow-800 p-3 rounded-lg flex items-start">
+            <AlertTriangle className="w-4 h-4 mr-2 mt-0.5" />
+            <span className="text-sm">
+              Este é um posto de autoatendimento {station.services.hasRoof ? "com" : "sem"} 
+              cobertura, projetado especificamente para caminhões. 
+              {station.brand === "KEYFUELS" || station.brand === "UKFUELS" 
+                ? " Requer cartão de frota do Reino Unido." 
+                : ""}
+            </span>
+          </div>
+        </div>
+        
+        <div className="mt-4 flex space-x-2">
+          <button
+            onClick={onClose}
+            className="flex-1 border border-gray-300 hover:bg-gray-100 text-gray-700 py-2 rounded"
+          >
+            Fechar
+          </button>
+          <button
+            onClick={() => onNavigate(station)}
+            className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded flex items-center justify-center"
+          >
+            <Navigation className="w-4 h-4 mr-1" />
+            <span>Navegar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+  
+  return (
+    <div className="h-full flex flex-col bg-gray-100">
+      <div className="p-4 bg-white shadow-md flex justify-between items-center">
+        <h2 className="text-lg font-bold">Postos de Autoatendimento</h2>
+        <button 
+          onClick={() => setShowFilters(!showFilters)}
+          className="p-2 bg-blue-100 text-blue-800 rounded-full"
+        >
+          <Filter className="w-5 h-5" />
+        </button>
+      </div>
+      
+      {showFilters && <FiltersPanel />}
+      
+      <div className="flex-1 overflow-auto">
+        {mockStations.map(station => (
+          <SelfServiceFuelStationPOI
+            key={station.id}
+            station={station}
+            onSelectStation={setSelectedStation}
+            onNavigate={() => console.log("Navigating to:", station.id)}
+          />
+        ))}
+      </div>
+      
+      {selectedStation && (
+        <StationDetails
+          station={selectedStation}
+          onClose={() => setSelectedStation(null)}
+          onNavigate={() => console.log("Navigating to:", selectedStation.id)}
+        />
+      )}
+    </div>
+  );
+};
+
+export default SelfServiceFuelStations;

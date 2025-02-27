@@ -1,0 +1,436 @@
+import React, { useState, useEffect } from 'react';
+import { AlertTriangle, TrendingDown, Truck, Check, X, Volume2, ArrowDown, Disc } from 'lucide-react';
+
+const TruckLoadAlert = () => {
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [showAlert, setShowAlert] = useState(true);
+  const [isLoaded, setIsLoaded] = useState(null);
+  const [showDescendingInfo, setShowDescendingInfo] = useState(false);
+  const [currentSpeed, setCurrentSpeed] = useState(60);
+  const [recommendedSpeed, setRecommendedSpeed] = useState(30);
+  const [recommendedGear, setRecommendedGear] = useState(3);
+  const [infoExpanded, setInfoExpanded] = useState(false);
+  const [serraInfo, setSerraInfo] = useState({
+    name: "Serra da Cantareira - SP",
+    length: "12 km",
+    avgDeclive: "8%",
+    maxDeclive: "12%",
+    dangerPoints: 5,
+    safestGear: "3ª ou 4ª marcha",
+    accidentsLastYear: 26,
+    fatalAccidents: 7
+  });
+  
+  // Exemplo de dados de alertas reais
+  const alertData = {
+    loaded: [
+      {
+        title: "UTILIZE MARCHA REDUZIDA",
+        description: "Desça esta serra na MESMA marcha que você usaria para subi-la. Isso garantirá que o freio motor funcione adequadamente.",
+        speedReduction: "20% abaixo da velocidade sinalizada",
+        gearRecommendation: true
+      },
+      {
+        title: "ATENÇÃO: ALTO RISCO DE ACIDENTE",
+        description: "26 motoristas sofreram acidentes nesta serra no último ano. 7 não sobreviveram por superaquecimento de freios.",
+        speedReduction: "20% abaixo da velocidade sinalizada",
+        gearRecommendation: true
+      }
+    ],
+    empty: [
+      {
+        title: "ATENÇÃO: CAMINHÃO VAZIO",
+        description: "Mesmo vazio, mantenha-se em marcha reduzida. O peso menor pode causar instabilidade nas curvas.",
+        speedReduction: "Máximo de velocidade conforme sinalização",
+        gearRecommendation: false
+      }
+    ]
+  };
+  
+  // Informações específicas para motoristas experientes e inexperientes
+  const experienceInfo = {
+    experienced: {
+      title: "RECOMENDAÇÃO PARA MOTORISTAS EXPERIENTES",
+      gears: "4ª ou 5ª marcha dependendo do declive",
+      brakingSystem: "Alternar entre freio motor e freio de serviço para evitar superaquecimento",
+      tips: "Monitore a temperatura dos freios constantemente"
+    },
+    novice: {
+      title: "PARA MOTORISTAS MENOS EXPERIENTES",
+      gears: "3ª marcha durante toda a descida",
+      brakingSystem: "Priorize o freio motor, use o freio de serviço apenas quando necessário",
+      tips: "Mantenha distância segura do veículo à frente para evitar frenagens bruscas"
+    }
+  };
+  
+  // Exemplos reais de consequências de descidas perigosas
+  const realAccidents = [
+    {
+      location: "Km 84 - Serra da Cantareira",
+      date: "15/03/2023",
+      description: "Motorista de caminhão carregado perdeu o controle após superaquecimento dos freios. Tombou e deixou 3 filhos",
+      type: "Fatal"
+    },
+    {
+      location: "Km 78 - Curva da Onça",
+      date: "22/11/2022",
+      description: "Caminhão bateu na mureta após freios falharem. Motorista ficou 4 meses hospitalizado",
+      type: "Grave"
+    },
+    {
+      location: "Km 82 - Trecho de Descida Acentuada",
+      date: "05/07/2023",
+      description: "Tombamento por excesso de velocidade em curva. Perda total da carga e do veículo",
+      type: "Material"
+    }
+  ];
+  
+  // Cálculo simples de velocidade recomendada com base na carga
+  useEffect(() => {
+    if (isLoaded !== null) {
+      const baseSpeed = 40; // Velocidade base sinalizada
+      if (isLoaded) {
+        // 20% abaixo para caminhões carregados
+        setRecommendedSpeed(Math.round(baseSpeed * 0.8));
+        setRecommendedGear(3); // Marcha mais reduzida para caminhões carregados
+      } else {
+        // Até o limite para caminhões vazios
+        setRecommendedSpeed(baseSpeed);
+        setRecommendedGear(5); // Marcha menos reduzida para caminhões vazios
+      }
+    }
+  }, [isLoaded]);
+  
+  // Seleciona o alerta apropriado com base no estado de carga
+  const getCurrentAlert = () => {
+    if (isLoaded === null) return null;
+    
+    const alerts = isLoaded ? alertData.loaded : alertData.empty;
+    return alerts[0]; // Primeiro alerta da categoria apropriada
+  };
+  
+  // Tratamento da resposta do usuário
+  const handleLoadResponse = (loaded) => {
+    setIsLoaded(loaded);
+    setShowDescendingInfo(true);
+  };
+  
+  return (
+    <div className={`${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'} min-h-screen p-4`}>
+      {/* Cabeçalho */}
+      <div className="flex items-center justify-between mb-6 border-b border-gray-700 pb-3">
+        <div className="flex items-center">
+          <TrendingDown className="w-6 h-6 mr-2 text-red-500" />
+          <h1 className="text-xl font-bold">King Road - Sistema de Alerta para Descidas</h1>
+        </div>
+      </div>
+      
+      {/* Alerta inicial de verificação de carga */}
+      {showAlert && isLoaded === null && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+          <div className="bg-red-900 rounded-lg shadow-lg max-w-md w-full p-6 animate-pulse">
+            <div className="flex items-center justify-center mb-4">
+              <AlertTriangle className="w-16 h-16 text-yellow-400" />
+            </div>
+            
+            <h2 className="text-2xl font-bold text-center text-white mb-6">
+              VOCÊ ESTÁ CARREGADO?
+            </h2>
+            
+            <div className="text-center mb-6 text-yellow-200">
+              <p>Você está prestes a descer a {serraInfo.name}</p>
+              <p>Declive médio: {serraInfo.avgDeclive} • Extensão: {serraInfo.length}</p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <button 
+                onClick={() => handleLoadResponse(true)}
+                className="py-4 bg-yellow-600 hover:bg-yellow-700 text-white text-xl font-bold rounded-lg transition-colors flex items-center justify-center"
+              >
+                <Truck className="w-6 h-6 mr-2" />
+                SIM
+              </button>
+              
+              <button 
+                onClick={() => handleLoadResponse(false)}
+                className="py-4 bg-blue-600 hover:bg-blue-700 text-white text-xl font-bold rounded-lg transition-colors flex items-center justify-center"
+              >
+                <Check className="w-6 h-6 mr-2" />
+                NÃO
+              </button>
+            </div>
+            
+            <div className="mt-6 text-center text-yellow-200 text-sm">
+              <p>Esta informação é crucial para sua segurança</p>
+              <p>e a de outros motoristas.</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Informações de descida após resposta */}
+      {showDescendingInfo && getCurrentAlert() && (
+        <div className={`mb-6 ${isLoaded ? 'bg-red-900' : 'bg-yellow-800'} rounded-lg shadow-lg overflow-hidden`}>
+          <div className="p-4">
+            <div className="flex items-start">
+              <AlertTriangle className={`w-10 h-10 ${isLoaded ? 'text-yellow-400' : 'text-white'} mr-3 flex-shrink-0 mt-1`} />
+              <div>
+                <h2 className="text-xl font-bold text-white">{getCurrentAlert().title}</h2>
+                <p className="text-white opacity-90 mt-1">{getCurrentAlert().description}</p>
+              </div>
+            </div>
+            
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              <div className="bg-black bg-opacity-30 p-3 rounded-lg">
+                <div className="text-xs text-white opacity-70 mb-1">Velocidade Recomendada:</div>
+                <div className="text-2xl font-bold text-white flex items-center">
+                  {recommendedSpeed} <span className="text-sm ml-1">km/h</span>
+                  <span className="text-xs ml-2 text-yellow-300">({getCurrentAlert().speedReduction})</span>
+                </div>
+              </div>
+              
+              {getCurrentAlert().gearRecommendation && (
+                <div className="bg-black bg-opacity-30 p-3 rounded-lg">
+                  <div className="text-xs text-white opacity-70 mb-1">Marcha Recomendada:</div>
+                  <div className="text-2xl font-bold text-white">
+                    {recommendedGear}ª marcha
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-4 p-3 bg-black bg-opacity-30 rounded-lg">
+              <div className="flex items-center text-white">
+                <Volume2 className="w-5 h-5 mr-2 text-yellow-400" />
+                <span className="text-sm">
+                  "Use a mesma marcha que usaria para subir esta serra. Se você tem força para subir, tem força para descer com segurança."
+                </span>
+              </div>
+              <div className="mt-1 text-xs text-right text-white opacity-70">
+                - Depoimento de motorista com 28 anos de experiência
+              </div>
+            </div>
+          </div>
+          
+          <button 
+            onClick={() => setInfoExpanded(!infoExpanded)}
+            className="w-full py-2 bg-black bg-opacity-50 text-white text-sm flex items-center justify-center"
+          >
+            {infoExpanded ? (
+              <>
+                <ArrowDown className="w-4 h-4 mr-1 transform rotate-180" />
+                Menos Informações
+              </>
+            ) : (
+              <>
+                <ArrowDown className="w-4 h-4 mr-1" />
+                Mais Informações de Segurança
+              </>
+            )}
+          </button>
+          
+          {infoExpanded && (
+            <div className="p-4 bg-black bg-opacity-20">
+              {/* Pontos de perigo */}
+              <div className="mb-4">
+                <h3 className="text-lg font-medium text-white mb-2">Pontos de Perigo na Descida</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center">
+                    <div className="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center mr-2">
+                      <span className="text-white text-xs font-bold">1</span>
+                    </div>
+                    <span className="text-white">Km 84 - Curva fechada com declive de 12%</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center mr-2">
+                      <span className="text-white text-xs font-bold">2</span>
+                    </div>
+                    <span className="text-white">Km 82 - Trecho de 3km com declive contínuo</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center mr-2">
+                      <span className="text-white text-xs font-bold">3</span>
+                    </div>
+                    <span className="text-white">Km 78 - Curva da Onça - Local de vários acidentes</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Informações baseadas na experiência */}
+              <div className="mb-4">
+                <h3 className="text-lg font-medium text-white mb-2">Recomendações por Experiência</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="bg-black bg-opacity-30 p-3 rounded-lg">
+                    <h4 className="text-sm font-medium text-yellow-400 mb-1">
+                      {experienceInfo.novice.title}
+                    </h4>
+                    <ul className="text-xs space-y-1 text-white">
+                      <li>• <span className="opacity-90">Marcha recomendada:</span> {experienceInfo.novice.gears}</li>
+                      <li>• <span className="opacity-90">Sistema de freios:</span> {experienceInfo.novice.brakingSystem}</li>
+                      <li>• <span className="opacity-90">Dica especial:</span> {experienceInfo.novice.tips}</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="bg-black bg-opacity-30 p-3 rounded-lg">
+                    <h4 className="text-sm font-medium text-green-400 mb-1">
+                      {experienceInfo.experienced.title}
+                    </h4>
+                    <ul className="text-xs space-y-1 text-white">
+                      <li>• <span className="opacity-90">Marcha recomendada:</span> {experienceInfo.experienced.gears}</li>
+                      <li>• <span className="opacity-90">Sistema de freios:</span> {experienceInfo.experienced.brakingSystem}</li>
+                      <li>• <span className="opacity-90">Dica especial:</span> {experienceInfo.experienced.tips}</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Acidentes reais */}
+              <div>
+                <h3 className="text-lg font-medium text-white mb-2">Acidentes Recentes nesta Serra</h3>
+                <div className="space-y-2">
+                  {realAccidents.map((accident, index) => (
+                    <div key={index} className="bg-black bg-opacity-30 p-3 rounded-lg">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-xs text-white opacity-70">{accident.location}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded ${accident.type === 'Fatal' ? 'bg-red-700' : accident.type === 'Grave' ? 'bg-orange-700' : 'bg-yellow-700'}`}>
+                          {accident.type}
+                        </span>
+                      </div>
+                      <p className="text-sm text-white">{accident.description}</p>
+                      <div className="text-xs text-white opacity-70 mt-1">{accident.date}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      
+      {/* Painel de simulação de velocidade */}
+      {isLoaded !== null && (
+        <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg p-4 mb-6`}>
+          <h2 className="text-lg font-medium mb-4">Simulação de Descida</h2>
+          
+          <div className="flex items-center justify-between mb-6">
+            <div className="text-center">
+              <div className="text-sm text-gray-400 mb-1">Velocidade Atual</div>
+              <div 
+                className={`text-4xl font-bold ${currentSpeed > recommendedSpeed ? 'text-red-500' : 'text-green-500'}`}
+              >
+                {currentSpeed}
+                <span className="text-sm ml-1">km/h</span>
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <div className="text-sm text-gray-400 mb-1">Velocidade Recomendada</div>
+              <div className="text-4xl font-bold text-yellow-500">
+                {recommendedSpeed}
+                <span className="text-sm ml-1">km/h</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="relative h-6 bg-gray-700 rounded-full overflow-hidden mb-2">
+            <div 
+              className={`absolute top-0 left-0 h-full ${currentSpeed <= recommendedSpeed ? 'bg-green-500' : currentSpeed <= recommendedSpeed * 1.2 ? 'bg-yellow-500' : 'bg-red-500'}`}
+              style={{ width: `${(currentSpeed / 100) * 100}%` }}
+            ></div>
+          </div>
+          
+          <div className="flex justify-between text-xs text-gray-400">
+            <span>0 km/h</span>
+            <span>50 km/h</span>
+            <span>100 km/h</span>
+          </div>
+          
+          {/* Simulador simples */}
+          <div className="mt-6 flex justify-center">
+            <button 
+              onClick={() => setCurrentSpeed(Math.max(10, currentSpeed - 5))}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-l-lg"
+            >
+              Reduzir (-5 km/h)
+            </button>
+            <button 
+              onClick={() => setCurrentSpeed(Math.min(100, currentSpeed + 5))}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-r-lg"
+            >
+              Aumentar (+5 km/h)
+            </button>
+          </div>
+          
+          {/* Alerta de superaquecimento */}
+          {currentSpeed > recommendedSpeed * 1.3 && (
+            <div className="mt-4 bg-red-900 text-white p-3 rounded-lg animate-pulse flex items-center">
+              <Disc className="w-5 h-5 mr-2 text-red-300" />
+              <div>
+                <p className="font-medium">ALERTA DE SUPERAQUECIMENTO DE FREIOS</p>
+                <p className="text-sm">Reduza a velocidade imediatamente e utilize o freio motor!</p>
+              </div>
+            </div>
+          )}
+          
+          {/* Sugestão de marcha */}
+          {isLoaded && (
+            <div className="mt-4 bg-blue-900/40 text-white p-3 rounded-lg">
+              <p className="font-medium">LEMBRETE DE SEGURANÇA</p>
+              <p className="text-sm">
+                Mantenha o caminhão na {recommendedGear}ª marcha durante toda a descida. 
+                Utilize o freio de serviço apenas quando necessário para evitar superaquecimento.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+      
+      {/* Informações da Serra */}
+      {isLoaded !== null && (
+        <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg p-4`}>
+          <h2 className="text-lg font-medium mb-4">Informações da Serra</h2>
+          
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="p-3 bg-gray-700 rounded-lg">
+              <div className="text-xs text-gray-400 mb-1">Nome</div>
+              <div className="font-medium">{serraInfo.name}</div>
+            </div>
+            
+            <div className="p-3 bg-gray-700 rounded-lg">
+              <div className="text-xs text-gray-400 mb-1">Extensão</div>
+              <div className="font-medium">{serraInfo.length}</div>
+            </div>
+            
+            <div className="p-3 bg-gray-700 rounded-lg">
+              <div className="text-xs text-gray-400 mb-1">Declive Médio</div>
+              <div className="font-medium">{serraInfo.avgDeclive}</div>
+            </div>
+            
+            <div className="p-3 bg-gray-700 rounded-lg">
+              <div className="text-xs text-gray-400 mb-1">Declive Máximo</div>
+              <div className="font-medium">{serraInfo.maxDeclive}</div>
+            </div>
+          </div>
+          
+          <div className="p-3 bg-red-900/30 rounded-lg">
+            <div className="flex justify-between mb-2">
+              <span className="text-sm font-medium">Acidentes no último ano</span>
+              <span className="font-bold">{serraInfo.accidentsLastYear}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm font-medium">Acidentes fatais</span>
+              <span className="font-bold text-red-400">{serraInfo.fatalAccidents}</span>
+            </div>
+          </div>
+          
+          <div className="mt-4 text-center text-sm text-gray-400">
+            <p>Esta serra é considerada de {isLoaded ? 'ALTO' : 'MÉDIO'} risco para caminhões {isLoaded ? 'carregados' : 'vazios'}.</p>
+            <p className="mt-1">Dirija com responsabilidade!</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default TruckLoadAlert;

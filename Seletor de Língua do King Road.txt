@@ -1,0 +1,160 @@
+import React, { useState, useEffect } from 'react';
+import { Globe, Check, ChevronDown } from 'lucide-react';
+
+const LanguageSelector = () => {
+  const [language, setLanguage] = useState('pt-PT');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  
+  // Exemplos de frases para mostrar a diferença entre os idiomas
+  const examples = {
+    'pt-PT': {
+      vehicle: "Camião",
+      road: "Autoestrada",
+      fuel: "Gasóleo",
+      action: "Saia na saída",
+      poi: "Bomba de combustível"
+    },
+    'pt-BR': {
+      vehicle: "Caminhão",
+      road: "Rodovia",
+      fuel: "Diesel",
+      action: "Pegue a saída",
+      poi: "Posto de combustível"
+    }
+  };
+  
+  // Simula o carregamento do idioma salvo
+  useEffect(() => {
+    // Na implementação real, isso viria do sistema de idiomas
+    const savedLanguage = localStorage.getItem('kingroad-language') || 'pt-PT';
+    setLanguage(savedLanguage);
+  }, []);
+  
+  // Altera o idioma e salva a preferência
+  const changeLanguage = (lang) => {
+    setLanguage(lang);
+    localStorage.setItem('kingroad-language', lang);
+    setDropdownOpen(false);
+  };
+  
+  // Obtém o nome completo do idioma
+  const getLanguageName = (code) => {
+    return code === 'pt-PT' 
+      ? 'Português (Portugal)' 
+      : 'Português (Brasil)';
+  };
+  
+  // Obtém a bandeira do país
+  const getFlag = (code) => {
+    return code === 'pt-PT' ? '🇵🇹' : '🇧🇷';
+  };
+  
+  return (
+    <div className={`p-4 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'} min-h-screen`}>
+      {/* Cabeçalho */}
+      <div className="flex items-center justify-between mb-6 border-b border-gray-700 pb-3">
+        <div className="flex items-center">
+          <Globe className="w-6 h-6 mr-2 text-blue-500" />
+          <h1 className="text-xl font-bold">King Road - Idioma</h1>
+        </div>
+      </div>
+      
+      {/* Seletor de idioma */}
+      <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg p-4 mb-6 relative`}>
+        <h2 className="text-lg font-medium mb-4">Selecione o seu idioma</h2>
+        
+        <div className="relative">
+          <button 
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className={`w-full flex items-center justify-between p-3 ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} rounded-lg transition-colors`}
+          >
+            <div className="flex items-center">
+              <span className="text-2xl mr-3">{getFlag(language)}</span>
+              <span className="font-medium">{getLanguageName(language)}</span>
+            </div>
+            <ChevronDown className={`w-5 h-5 transition-transform ${dropdownOpen ? 'transform rotate-180' : ''}`} />
+          </button>
+          
+          {dropdownOpen && (
+            <div className={`absolute top-full left-0 right-0 mt-1 ${isDarkMode ? 'bg-gray-700' : 'bg-white'} rounded-lg shadow-lg overflow-hidden z-10`}>
+              {['pt-PT', 'pt-BR'].map(lang => (
+                <button
+                  key={lang}
+                  onClick={() => changeLanguage(lang)}
+                  className={`w-full flex items-center p-3 ${isDarkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-100'} transition-colors ${language === lang ? (isDarkMode ? 'bg-gray-600' : 'bg-gray-200') : ''}`}
+                >
+                  <span className="text-2xl mr-3">{getFlag(lang)}</span>
+                  <span className="font-medium">{getLanguageName(lang)}</span>
+                  {language === lang && <Check className="w-5 h-5 ml-auto text-green-500" />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Exemplos de diferenças linguísticas */}
+      <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg p-4 mb-6`}>
+        <h2 className="text-lg font-medium mb-4">Diferenças linguísticas</h2>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+            <div className="flex items-center mb-2">
+              <span className="text-lg mr-2">🇵🇹</span>
+              <span className="font-medium">Português Europeu</span>
+            </div>
+            <ul className="space-y-2">
+              {Object.entries(examples['pt-PT']).map(([key, value]) => (
+                <li key={key} className="flex items-center">
+                  <span className="w-2 h-2 rounded-full bg-blue-500 mr-2"></span>
+                  <span>{value}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          
+          <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+            <div className="flex items-center mb-2">
+              <span className="text-lg mr-2">🇧🇷</span>
+              <span className="font-medium">Português Brasileiro</span>
+            </div>
+            <ul className="space-y-2">
+              {Object.entries(examples['pt-BR']).map(([key, value]) => (
+                <li key={key} className="flex items-center">
+                  <span className="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                  <span>{value}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+      
+      {/* Informação de contexto */}
+      <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg p-4`}>
+        <h2 className="text-lg font-medium mb-2">Porque oferecemos várias opções</h2>
+        <p className="text-sm mb-4">
+          O King Road adapta-se automaticamente às preferências linguísticas regionais. Em Portugal, muitos brasileiros utilizam as estradas europeias, e por isso oferecemos a opção de escolher entre o português europeu e o português brasileiro.
+        </p>
+        
+        <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-blue-900/30' : 'bg-blue-100'} text-sm`}>
+          <p>
+            <strong>Nota:</strong> Esta opção afeta toda a aplicação, incluindo comandos de voz, menus e informações de navegação.
+          </p>
+        </div>
+      </div>
+      
+      {/* Botão de aplicar */}
+      <div className="mt-6">
+        <button 
+          className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+        >
+          Aplicar configurações
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default LanguageSelector;

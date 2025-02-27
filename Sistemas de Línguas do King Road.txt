@@ -1,0 +1,304 @@
+// king-road-language-system.js
+
+/**
+ * Sistema de idiomas para o King Road
+ * Suporta diferenças entre português europeu e brasileiro
+ */
+
+// Objeto principal de traduções
+const KingRoadLanguage = {
+  /**
+   * Dicionários de termos para PT-PT e PT-BR
+   */
+  dictionaries: {
+    // Português Europeu (Portugal)
+    "pt-PT": {
+      // Veículos
+      vehicles: {
+        truck: "Camião",
+        car: "Carro",
+        bus: "Autocarro",
+        motorcycle: "Mota",
+        van: "Carrinha"
+      },
+      
+      // Tipos de estradas
+      roadTypes: {
+        highway: "Autoestrada",
+        national: "Estrada Nacional",
+        urban: "Zona Urbana",
+        rural: "Estrada Rural",
+        mountain: "Estrada de Montanha"
+      },
+      
+      // Combustíveis
+      fuel: {
+        diesel: "Gasóleo",
+        gasoline: "Gasolina",
+        lpg: "GPL",
+        electric: "Elétrico"
+      },
+      
+      // Interface de navegação
+      navigation: {
+        turn_left: "Vire à esquerda",
+        turn_right: "Vire à direita",
+        make_uturn: "Faça inversão de marcha",
+        continue_straight: "Continue em frente",
+        reached_destination: "Chegou ao destino",
+        recalculating: "A recalcular percurso",
+        take_exit: "Saia na saída",
+        enter_roundabout: "Entre na rotunda"
+      },
+      
+      // Configurações
+      settings: {
+        language: "Idioma",
+        units: "Unidades",
+        theme: "Tema",
+        voice: "Voz",
+        notifications: "Notificações",
+        vehicle_profile: "Perfil do Veículo",
+        route_options: "Opções de Rota"
+      },
+      
+      // Alertas e notificações
+      alerts: {
+        speed_camera: "Radar de velocidade",
+        accident: "Acidente",
+        construction: "Obras",
+        traffic_jam: "Congestionamento",
+        police: "Polícia",
+        border_crossing: "Posto fronteiriço",
+        rest_area: "Área de descanso",
+        speed_limit_exceeded: "Limite de velocidade excedido"
+      },
+      
+      // POIs (Pontos de Interesse)
+      poi: {
+        gas_station: "Bomba de combustível",
+        restaurant: "Restaurante",
+        hotel: "Hotel",
+        parking: "Estacionamento",
+        rest_area: "Área de serviço",
+        repair_shop: "Oficina",
+        atm: "Multibanco"
+      },
+      
+      // Mensagens do sistema
+      system: {
+        searching: "A procurar...",
+        loading: "A carregar...",
+        saving: "A guardar...",
+        error: "Erro",
+        success: "Sucesso",
+        warning: "Aviso",
+        no_results: "Sem resultados",
+        offline_mode: "Modo offline",
+        gps_lost: "Sinal GPS perdido",
+        welcome: "Bem-vindo ao King Road"
+      },
+      
+      // Termos específicos de transporte
+      transport: {
+        toll: "Portagem",
+        weight_limit: "Limite de peso",
+        height_limit: "Limite de altura",
+        width_limit: "Limite de largura",
+        hazardous_materials: "Materiais perigosos",
+        rest_time: "Tempo de descanso",
+        driving_time: "Tempo de condução",
+        load: "Carga"
+      }
+    },
+    
+    // Português Brasileiro (Brasil)
+    "pt-BR": {
+      // Veículos
+      vehicles: {
+        truck: "Caminhão",
+        car: "Carro",
+        bus: "Ônibus",
+        motorcycle: "Moto",
+        van: "Van"
+      },
+      
+      // Tipos de estradas
+      roadTypes: {
+        highway: "Rodovia",
+        national: "Estrada Federal",
+        urban: "Zona Urbana",
+        rural: "Estrada Rural",
+        mountain: "Estrada de Montanha"
+      },
+      
+      // Combustíveis
+      fuel: {
+        diesel: "Diesel",
+        gasoline: "Gasolina",
+        lpg: "GLP",
+        electric: "Elétrico"
+      },
+      
+      // Interface de navegação
+      navigation: {
+        turn_left: "Vire à esquerda",
+        turn_right: "Vire à direita",
+        make_uturn: "Faça retorno",
+        continue_straight: "Continue em frente",
+        reached_destination: "Você chegou ao destino",
+        recalculating: "Recalculando rota",
+        take_exit: "Pegue a saída",
+        enter_roundabout: "Entre na rotatória"
+      },
+      
+      // Configurações
+      settings: {
+        language: "Idioma",
+        units: "Unidades",
+        theme: "Tema",
+        voice: "Voz",
+        notifications: "Notificações",
+        vehicle_profile: "Perfil do Veículo",
+        route_options: "Opções de Rota"
+      },
+      
+      // Alertas e notificações
+      alerts: {
+        speed_camera: "Radar de velocidade",
+        accident: "Acidente",
+        construction: "Obras",
+        traffic_jam: "Congestionamento",
+        police: "Polícia",
+        border_crossing: "Fronteira",
+        rest_area: "Área de descanso",
+        speed_limit_exceeded: "Limite de velocidade excedido"
+      },
+      
+      // POIs (Pontos de Interesse)
+      poi: {
+        gas_station: "Posto de combustível",
+        restaurant: "Restaurante",
+        hotel: "Hotel",
+        parking: "Estacionamento",
+        rest_area: "Área de descanso",
+        repair_shop: "Oficina mecânica",
+        atm: "Caixa eletrônico"
+      },
+      
+      // Mensagens do sistema
+      system: {
+        searching: "Pesquisando...",
+        loading: "Carregando...",
+        saving: "Salvando...",
+        error: "Erro",
+        success: "Sucesso",
+        warning: "Aviso",
+        no_results: "Sem resultados",
+        offline_mode: "Modo offline",
+        gps_lost: "Sinal GPS perdido",
+        welcome: "Bem-vindo ao King Road"
+      },
+      
+      // Termos específicos de transporte
+      transport: {
+        toll: "Pedágio",
+        weight_limit: "Limite de peso",
+        height_limit: "Limite de altura",
+        width_limit: "Limite de largura",
+        hazardous_materials: "Produtos perigosos",
+        rest_time: "Tempo de descanso",
+        driving_time: "Tempo de direção",
+        load: "Carga"
+      }
+    }
+  },
+  
+  /**
+   * Idioma atual
+   */
+  currentLanguage: "pt-PT", // padrão: Português Europeu
+  
+  /**
+   * Altera o idioma atual
+   * @param {string} lang - Código do idioma ('pt-PT' ou 'pt-BR')
+   */
+  setLanguage: function(lang) {
+    if (this.dictionaries[lang]) {
+      this.currentLanguage = lang;
+      // Aqui você pode adicionar eventos ou callbacks para notificar a interface
+      
+      // Salvar preferência no localStorage
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('kingroad-language', lang);
+      }
+      
+      return true;
+    }
+    return false;
+  },
+  
+  /**
+   * Obtém o termo traduzido para o idioma atual
+   * @param {string} category - Categoria no dicionário
+   * @param {string} term - Termo a ser traduzido
+   * @returns {string} Termo traduzido
+   */
+  translate: function(category, term) {
+    try {
+      const dict = this.dictionaries[this.currentLanguage];
+      if (dict && dict[category] && dict[category][term]) {
+        return dict[category][term];
+      }
+      
+      // Fallback para o idioma padrão se não encontrado
+      const defaultDict = this.dictionaries["pt-PT"];
+      if (defaultDict && defaultDict[category] && defaultDict[category][term]) {
+        return defaultDict[category][term];
+      }
+      
+      // Se não encontrar em nenhum dicionário, retorna o próprio termo
+      return term;
+    } catch (error) {
+      console.error(`Erro na tradução: ${category}.${term}`, error);
+      return term;
+    }
+  },
+  
+  /**
+   * Método simplificado para tradução (alias para translate)
+   */
+  t: function(category, term) {
+    return this.translate(category, term);
+  },
+  
+  /**
+   * Inicializa o sistema de idiomas e carrega preferências salvas
+   */
+  init: function() {
+    // Tenta carregar idioma salvo
+    if (typeof localStorage !== 'undefined') {
+      const savedLang = localStorage.getItem('kingroad-language');
+      if (savedLang && this.dictionaries[savedLang]) {
+        this.currentLanguage = savedLang;
+      }
+    }
+    
+    // Detecta idioma do navegador como fallback se não tiver preferência salva
+    if (!this.currentLanguage && typeof navigator !== 'undefined') {
+      const browserLang = navigator.language || navigator.userLanguage;
+      if (browserLang.startsWith('pt-BR')) {
+        this.currentLanguage = 'pt-BR';
+      } else if (browserLang.startsWith('pt')) {
+        this.currentLanguage = 'pt-PT';
+      }
+    }
+    
+    console.log(`King Road: Sistema de idiomas inicializado (${this.currentLanguage})`);
+    
+    return this;
+  }
+};
+
+// Exporta o sistema de idiomas
+export default KingRoadLanguage.init();

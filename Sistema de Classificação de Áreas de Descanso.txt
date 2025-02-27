@@ -1,0 +1,201 @@
+import React, { useState } from 'react';
+import { Star, Clock, MapPin, AlertTriangle, ChevronDown } from 'lucide-react';
+
+const TruckStopStatus = () => {
+  // Estado para simulação de dados
+  const [truckStops, setTruckStops] = useState([
+    {
+      id: '1',
+      name: 'Truck Stop Aurora',
+      location: 'KM 123 - A1',
+      lastUpdate: new Date(),
+      spotHistory: {
+        last7Days: { fullCount: 2 },
+        last15Days: { fullCount: 3 },
+        last30Days: { fullCount: 4 },
+      },
+      currentStatus: 'available', // available, limited, full
+      totalSpots: 50,
+      availableSpots: 30,
+      amenities: ['restaurant', 'shower', 'fuel'],
+      rating: 4.5,
+    }
+  ]);
+
+  // Componente para a barra de status da viagem
+  const TripStatusBar = () => (
+    <div className="fixed top-4 left-4 bg-gray-900 rounded-lg p-4 w-64">
+      <div className="space-y-3">
+        <div className="flex justify-between items-center">
+          <span className="text-gray-400">Hora Atual</span>
+          <span className="text-white font-bold">14:30</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-400">Chegada Prevista</span>
+          <span className="text-white font-bold">16:45</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-400">Distância Restante</span>
+          <span className="text-white font-bold">230 km</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-400">Tempo Restante</span>
+          <span className="text-white font-bold">2h 15m</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Componente de ícone de coroa
+  const CrownIcon = ({ type }) => {
+    const color = type === 'gold' ? 'text-yellow-500' :
+                 type === 'silver' ? 'text-gray-400' :
+                 'text-yellow-700';
+
+    return (
+      <div className="absolute -top-2 -right-2">
+        <Star
+          size={16}
+          fill="currentColor"
+          className={`${color}`}
+        />
+      </div>
+    );
+  };
+
+  // Componente de status atual
+  const CurrentStatus = ({ status, spots }) => {
+    const statusColors = {
+      available: 'bg-green-500',
+      limited: 'bg-yellow-500',
+      full: 'bg-red-500'
+    };
+
+    return (
+      <div className="flex items-center mt-2">
+        <div className={`w-2 h-2 rounded-full ${statusColors[status]} mr-2`} />
+        <span className="text-sm text-gray-300">
+          {spots} vagas disponíveis
+        </span>
+      </div>
+    );
+  };
+
+  // Card de Truck Stop
+  const TruckStopCard = ({ stop }) => {
+    // Determina a classificação baseada no histórico
+    const getCrownType = (history) => {
+      if (history.last30Days.fullCount === 0) return 'gold';
+      if (history.last15Days.fullCount === 0) return 'silver';
+      if (history.last7Days.fullCount > 2) return 'bronze';
+      return null;
+    };
+
+    // Determina a cor da borda baseada no status atual
+    const getBorderColor = (status) => {
+      switch (status) {
+        case 'available': return 'border-green-500';
+        case 'limited': return 'border-yellow-500';
+        case 'full': return 'border-red-500';
+        default: return 'border-gray-700';
+      }
+    };
+
+    const crownType = getCrownType(stop.spotHistory);
+    const borderColor = getBorderColor(stop.currentStatus);
+
+    return (
+      <div className={`relative bg-gray-800 rounded-lg p-4 border-2 ${borderColor}`}>
+        {crownType && <CrownIcon type={crownType} />}
+        
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-white font-medium">{stop.name}</h3>
+            <p className="text-sm text-gray-400">{stop.location}</p>
+          </div>
+        </div>
+
+        <CurrentStatus 
+          status={stop.currentStatus}
+          spots={stop.availableSpots}
+        />
+
+        <div className="mt-3 flex items-center justify-between text-sm">
+          <div className="flex items-center text-gray-400">
+            <Clock size={14} className="mr-1" />
+            Atualizado há {new Date(stop.lastUpdate).getMinutes()} min
+          </div>
+          <button className="text-blue-400 flex items-center">
+            Detalhes
+            <ChevronDown size={14} className="ml-1" />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Visualização gráfica do histórico
+  const HistoryGraph = ({ history }) => {
+    return (
+      <div className="mt-4 p-4 bg-gray-800 rounded-lg">
+        <h4 className="text-white mb-2">Histórico de Ocupação</h4>
+        <div className="h-24 flex items-end space-x-1">
+          {/* Aqui iria a implementação do gráfico */}
+          {/* Usando recharts ou outra biblioteca de gráficos */}
+        </div>
+      </div>
+    );
+  };
+
+  // Legenda do sistema de classificação
+  const ClassificationLegend = () => (
+    <div className="fixed bottom-4 left-4 bg-gray-900 p-4 rounded-lg">
+      <h4 className="text-white mb-2">Classificação de Paradas</h4>
+      <div className="space-y-2">
+        <div className="flex items-center">
+          <Star size={16} className="text-yellow-500 mr-2" />
+          <span className="text-gray-300">Coroa Ouro - Sempre com vagas</span>
+        </div>
+        <div className="flex items-center">
+          <Star size={16} className="text-gray-400 mr-2" />
+          <span className="text-gray-300">Coroa Prata - Raramente lotado</span>
+        </div>
+        <div className="flex items-center">
+          <Star size={16} className="text-yellow-700 mr-2" />
+          <span className="text-gray-300">Coroa Bronze - Frequentemente lotado</span>
+        </div>
+        <div className="h-px bg-gray-700 my-2" />
+        <div className="flex items-center">
+          <div className="w-4 h-4 border-2 border-green-500 rounded mr-2" />
+          <span className="text-gray-300">Vagas Disponíveis</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-4 h-4 border-2 border-yellow-500 rounded mr-2" />
+          <span className="text-gray-300">Poucas Vagas</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-4 h-4 border-2 border-red-500 rounded mr-2" />
+          <span className="text-gray-300">Lotado</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="relative min-h-screen bg-gray-900">
+      <TripStatusBar />
+      
+      <div className="p-4 mt-32">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {truckStops.map(stop => (
+            <TruckStopCard key={stop.id} stop={stop} />
+          ))}
+        </div>
+      </div>
+
+      <ClassificationLegend />
+    </div>
+  );
+};
+
+export default TruckStopStatus;

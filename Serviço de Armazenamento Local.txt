@@ -1,0 +1,20 @@
+// Serviço de armazenamento local
+const StorageService = {
+  async saveData(key, data) {
+    try {
+      await window.localStorage.setItem(key, JSON.stringify(data));
+    } catch (error) {
+      console.error('Erro ao salvar dados:', error);
+    }
+  },
+
+  async getData(key) {
+    try {
+      const data = await window.localStorage.getItem(key);
+      return data ? JSON.parse(data) : null;
+    } catch (error) {
+      console.error('Erro ao ler dados:', error);
+      return null;
+    }
+  }
+};

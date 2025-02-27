@@ -1,0 +1,141 @@
+import React, { useState, useEffect } from 'react';
+import { ArrowRight, ArrowLeft, MapPin, AlertTriangle } from 'lucide-react';
+
+const PrivateAreaNavigation = () => {
+  // Estados
+  const [isInPrivateArea, setIsInPrivateArea] = useState(false);
+  const [exitDirection, setExitDirection] = useState(null); // 'left' ou 'right'
+  const [selectedArea, setSelectedArea] = useState(null);
+
+  // Estrutura de dados para uma área privada
+  const PrivateAreaData = {
+    id: '',
+    name: '',
+    type: '', // 'truck_stop', 'rest_area', 'customer'
+    bounds: {
+      coordinates: [], // Array de coordenadas para formar o polígono
+      exitPoint: {
+        lat: 0,
+        lng: 0,
+        direction: 'right' // ou 'left'
+      }
+    },
+    details: {
+      address: '',
+      facilities: [],
+      restrictions: []
+    }
+  };
+
+  // Componente de Área Delimitada
+  const BoundedArea = ({ area }) => (
+    <div className="relative">
+      {/* A área azul translúcida */}
+      <div 
+        className="absolute"
+        style={{
+          background: 'rgba(40, 100, 255, 0.2)',
+          border: '2px solid rgb(40, 100, 255)',
+          borderRadius: '4px',
+          // Posicionamento e dimensões seriam calculados com base nas coordenadas reais
+          width: '100%',
+          height: '100%'
+        }}
+      />
+      
+      {/* Ícone do tipo de local */}
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+        <MapPin size={24} className="text-blue-600" />
+      </div>
+    </div>
+  );
+
+  // Alerta de Navegação
+  const NavigationAlert = () => (
+    <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white p-4 rounded-lg shadow-lg">
+      <div className="flex items-center space-x-2">
+        <AlertTriangle size={20} />
+        <div>
+          <h3 className="font-bold">Por favor navegue até a saída</h3>
+          {exitDirection && (
+            <p className="text-sm mt-1 flex items-center">
+              Ao sair, vire à {exitDirection === 'left' ? 'esquerda' : 'direita'}
+              {exitDirection === 'left' ? (
+                <ArrowLeft size={16} className="ml-2" />
+              ) : (
+                <ArrowRight size={16} className="ml-2" />
+              )}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  // Informações da Área
+  const AreaInfo = ({ area }) => (
+    <div className="fixed bottom-4 left-4 bg-gray-900 p-4 rounded-lg shadow-lg">
+      <h3 className="text-white font-bold">{area.name}</h3>
+      <div className="mt-2 space-y-1">
+        <p className="text-gray-300 text-sm">{area.details.address}</p>
+        {area.details.facilities.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {area.details.facilities.map((facility, index) => (
+              <span 
+                key={index}
+                className="bg-gray-800 text-gray-300 px-2 py-1 rounded text-xs"
+              >
+                {facility}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // Verificar se está dentro da área privada
+  useEffect(() => {
+    // Esta função seria chamada com as coordenadas GPS reais
+    const checkIfInPrivateArea = (currentPosition) => {
+      // Lógica para verificar se está dentro do polígono
+      // Retorna { isInside: boolean, area: PrivateAreaData }
+    };
+
+    // Exemplo de atualização de posição
+    const watchPosition = () => {
+      if (navigator.geolocation) {
+        return navigator.geolocation.watchPosition(position => {
+          const result = checkIfInPrivateArea({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+
+          setIsInPrivateArea(result.isInside);
+          if (result.isInside) {
+            setSelectedArea(result.area);
+            setExitDirection(result.area.bounds.exitPoint.direction);
+          }
+        });
+      }
+    };
+
+    const watchId = watchPosition();
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+
+  return (
+    <div className="relative h-screen">
+      {/* Renderizar a área delimitada se houver uma selecionada */}
+      {selectedArea && <BoundedArea area={selectedArea} />}
+
+      {/* Mostrar alerta de navegação quando dentro da área */}
+      {isInPrivateArea && <NavigationAlert />}
+
+      {/* Mostrar informações da área quando selecionada */}
+      {selectedArea && <AreaInfo area={selectedArea} />}
+    </div>
+  );
+};
+
+export default PrivateAreaNavigation;

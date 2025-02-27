@@ -1,0 +1,180 @@
+class NavigationDevSettings(
+    private val devPassword: String = "KR2025DEV" // Senha para ativar modo desenvolvedor
+) {
+    data class ViewSettings(
+        var fieldOfViewAngle: Float = 45.0f,       // Ângulo de inclinação da visão em graus
+        var visibilityAhead: Float = 1000.0f,      // Metros visíveis à frente
+        var visibilityLeft: Float = 100.0f,        // Metros visíveis à esquerda
+        var visibilityRight: Float = 100.0f,       // Metros visíveis à direita
+        var dayBrightness: Float = 100.0f,         // Brilho diurno em porcentagem
+        var nightBrightness: Float = 70.0f         // Brilho noturno em porcentagem
+    )
+
+    private var isDevMode = false
+    private var currentSettings = ViewSettings()
+    private val settingsHistory = mutableListOf<ViewSettings>()
+
+    // Ativa o modo desenvolvedor
+    fun activateDevMode(password: String): Boolean {
+        isDevMode = password == devPassword
+        return isDevMode
+    }
+
+    // Ajusta o ângulo de visão
+    fun adjustFieldOfView(percentage: Float): Boolean {
+        if (!isDevMode) return false
+        if (percentage !in 0f..100f) return false
+
+        currentSettings.fieldOfViewAngle = percentage
+        saveCurrentSettings()
+        return true
+    }
+
+    // Ajusta distância de visualização
+    fun adjustVisibilityRange(
+        ahead: Float? = null,
+        left: Float? = null,
+        right: Float? = null
+    ): Boolean {
+        if (!isDevMode) return false
+
+        ahead?.let { currentSettings.visibilityAhead = it }
+        left?.let { currentSettings.visibilityLeft = it }
+        right?.let { currentSettings.visibilityRight = it }
+        saveCurrentSettings()
+        return true
+    }
+
+    // Ajusta brilho
+    fun adjustBrightness(
+        dayBrightness: Float? = null,
+        nightBrightness: Float? = null
+    ): Boolean {
+        if (!isDevMode) return false
+        
+        if (dayBrightness != null && dayBrightness in 0f..100f) {
+            currentSettings.dayBrightness = dayBrightness
+        }
+        if (nightBrightness != null && nightBrightness in 0f..100f) {
+            currentSettings.nightBrightness = nightBrightness
+        }
+        saveCurrentSettings()
+        return true
+    }
+
+    // Salva configurações atuais no histórico
+    private fun saveCurrentSettings() {
+        settingsHistory.add(currentSettings.copy())
+    }
+
+    // Obtém configurações atuais (apenas em modo dev)
+    fun getCurrentSettings(): ViewSettings? {
+        return if (isDevMode) currentSettings else null
+    }
+
+    // Obtém histórico de configurações (apenas em modo dev)
+    fun getSettingsHistory(): List<ViewSettings>? {
+        return if (isDevMode) settingsHistory.toList() else null
+    }
+
+    // Exporta configurações para arquivo
+    fun exportSettings(): String {
+        if (!isDevMode) return ""
+        
+        return buildString {
+            appendLine("=== King Road Navigation Settings ===")
+            appendLine("Field of View: ${currentSettings.fieldOfViewAngle}%")
+            appendLine("Visibility:")
+            appendLine("- Ahead: ${currentSettings.visibilityAhead}m")
+            appendLine("- Left: ${currentSettings.visibilityLeft}m")
+            appendLine("- Right: ${currentSettings.visibilityRight}m")
+            appendLine("Brightness:")
+            appendLine("- Day: ${currentSettings.dayBrightness}%")
+            appendLine("- Night: ${currentSettings.nightBrightness}%")
+            appendLine("================================")
+        }
+    }
+}
+
+// Interface de overlay para testes em tempo real
+class DevModeOverlay {
+    private var isVisible = false
+    private val settings = NavigationDevSettings()
+
+    fun toggleOverlay(password: String) {
+        if (settings.activateDevMode(password)) {
+            isVisible = !isVisible
+        }
+    }
+
+    fun getOverlayInfo(): String? {
+        if (!isVisible) return null
+
+        val currentSettings = settings.getCurrentSettings() ?: return null
+        return buildString {
+            appendLine("⚙️ DEV MODE ACTIVE ⚙️")
+            appendLine("👁 FOV: ${currentSettings.fieldOfViewAngle}%")
+            appendLine("📏 Visibility:")
+            appendLine("  ↑ ${currentSettings.visibilityAhead}m")
+            appendLine("  ← ${currentSettings.visibilityLeft}m")
+            appendLine("  → ${currentSettings.visibilityRight}m")
+            appendLine("💡 Brightness:")
+            appendLine("  ☀️ ${currentSettings.dayBrightness}%")
+            appendLine("  🌙 ${currentSettings.nightBrightness}%")
+        }
+    }
+
+    // Ajustes em tempo real com gestos
+    fun handleGesture(
+        gesture: DevGesture,
+        value: Float
+    ) {
+        when (gesture) {
+            DevGesture.PINCH -> settings.adjustFieldOfView(value)
+            DevGesture.SWIPE_UP -> settings.adjustVisibilityRange(ahead = value)
+            DevGesture.SWIPE_LEFT -> settings.adjustVisibilityRange(left = value)
+            DevGesture.SWIPE_RIGHT -> settings.adjustVisibilityRange(right = value)
+            DevGesture.BRIGHTNESS_ADJUST -> {
+                val isDaytime = true // Implementar detecção de dia/noite
+                if (isDaytime) {
+                    settings.adjustBrightness(dayBrightness = value)
+                } else {
+                    settings.adjustBrightness(nightBrightness = value)
+                }
+            }
+        }
+    }
+}
+
+enum class DevGesture {
+    PINCH,              // Ajusta FOV
+    SWIPE_UP,          // Ajusta visibilidade à frente
+    SWIPE_LEFT,        // Ajusta visibilidade à esquerda
+    SWIPE_RIGHT,       // Ajusta visibilidade à direita
+    BRIGHTNESS_ADJUST   // Ajusta brilho
+}
+
+// Exemplo de uso durante testes
+fun main() {
+    val devSettings = NavigationDevSettings()
+    
+    // Ativa modo desenvolvedor
+    if (devSettings.activateDevMode("KR2025DEV")) {
+        println("Dev Mode Ativado!")
+        
+        // Faz alguns ajustes
+        devSettings.adjustFieldOfView(60f)
+        devSettings.adjustVisibilityRange(
+            ahead = 1200f,
+            left = 150f,
+            right = 150f
+        )
+        devSettings.adjustBrightness(
+            dayBrightness = 90f,
+            nightBrightness = 60f
+        )
+        
+        // Exporta configurações
+        println(devSettings.exportSettings())
+    }
+}

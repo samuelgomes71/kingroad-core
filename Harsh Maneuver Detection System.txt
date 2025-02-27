@@ -1,0 +1,187 @@
+data class VehicleMotion(
+    val acceleration: Vector3D,   // Aceleração em x, y, z
+    val rotation: Vector3D,       // Rotação em x, y, z
+    val speed: Double,           // Velocidade atual em km/h
+    val timestamp: Long          // Timestamp da leitura
+)
+
+data class Vector3D(
+    val x: Double,
+    val y: Double,
+    val z: Double
+)
+
+enum class AlertLevel {
+    NONE,       // Sem alerta
+    WARNING,    // Alerta amarelo
+    DANGER      // Alerta vermelho
+}
+
+data class ManeuverAlert(
+    val type: ManeuverType,
+    val level: AlertLevel,
+    val severity: Double,        // Gravidade da manobra (0-100)
+    val timestamp: Long
+)
+
+enum class ManeuverType {
+    HARSH_BRAKING,    // Frenagem brusca
+    HARSH_TURNING     // Curva brusca
+)
+
+class HarshManeuverDetector(
+    private val config: DetectorConfig = DetectorConfig()
+) {
+    data class DetectorConfig(
+        val brakingThresholds: Thresholds = Thresholds(-3.0, -4.5),  // m/s²
+        val turningThresholds: Thresholds = Thresholds(0.3, 0.45),   // rad/s
+        val samplingRate: Int = 50,                                   // Hz
+        val smoothingWindow: Int = 5                                  // amostras
+    )
+
+    data class Thresholds(
+        val warning: Double,    // Limite para alerta amarelo
+        val danger: Double      // Limite para alerta vermelho
+    )
+
+    private val motionBuffer = ArrayDeque<VehicleMotion>(config.smoothingWindow)
+    private var currentAlert: ManeuverAlert? = null
+
+    fun processMotion(motion: VehicleMotion): ManeuverAlert? {
+        // Adiciona nova leitura ao buffer
+        motionBuffer.add(motion)
+        if (motionBuffer.size > config.smoothingWindow) {
+            motionBuffer.removeFirst()
+        }
+
+        // Calcula médias suavizadas
+        val avgAcceleration = calculateAverageVector(motionBuffer.map { it.acceleration })
+        val avgRotation = calculateAverageVector(motionBuffer.map { it.rotation })
+
+        // Detecta frenagem brusca
+        val brakingAlert = detectHarshBraking(avgAcceleration, motion.speed)
+
+        // Detecta curva brusca
+        val turningAlert = detectHarshTurning(avgRotation, motion.speed)
+
+        // Retorna o alerta mais grave
+        return when {
+            brakingAlert?.level == AlertLevel.DANGER || turningAlert?.level == AlertLevel.DANGER ->
+                (brakingAlert ?: turningAlert)?.copy(level = AlertLevel.DANGER)
+            
+            brakingAlert?.level == AlertLevel.WARNING || turningAlert?.level == AlertLevel.WARNING ->
+                (brakingAlert ?: turningAlert)?.copy(level = AlertLevel.WARNING)
+            
+            else -> null
+        }?.also { alert ->
+            currentAlert = alert
+        }
+    }
+
+    private fun detectHarshBraking(acceleration: Vector3D, speed: Double): ManeuverAlert? {
+        // Considera apenas desaceleração significativa quando em movimento
+        if (speed < 5.0) return null
+
+        val brakingForce = -acceleration.x // Assumindo que x é o eixo longitudinal
+        return when {
+            brakingForce > config.brakingThresholds.danger -> ManeuverAlert(
+                type = ManeuverType.HARSH_BRAKING,
+                level = AlertLevel.DANGER,
+                severity = calculateSeverity(brakingForce, config.brakingThresholds),
+                timestamp = System.currentTimeMillis()
+            )
+            brakingForce > config.brakingThresholds.warning -> ManeuverAlert(
+                type = ManeuverType.HARSH_BRAKING,
+                level = AlertLevel.WARNING,
+                severity = calculateSeverity(brakingForce, config.brakingThresholds),
+                timestamp = System.currentTimeMillis()
+            )
+            else -> null
+        }
+    }
+
+    private fun detectHarshTurning(rotation: Vector3D, speed: Double): ManeuverAlert? {
+        // Considera apenas rotação significativa quando em movimento
+        if (speed < 5.0) return null
+
+        val turningRate = Math.abs(rotation.z) // Assumindo que z é o eixo vertical
+        return when {
+            turningRate > config.turningThresholds.danger -> ManeuverAlert(
+                type = ManeuverType.HARSH_TURNING,
+                level = AlertLevel.DANGER,
+                severity = calculateSeverity(turningRate, config.turningThresholds),
+                timestamp = System.currentTimeMillis()
+            )
+            turningRate > config.turningThresholds.warning -> ManeuverAlert(
+                type = ManeuverType.HARSH_TURNING,
+                level = AlertLevel.WARNING,
+                severity = calculateSeverity(turningRate, config.turningThresholds),
+                timestamp = System.currentTimeMillis()
+            )
+            else -> null
+        }
+    }
+
+    private fun calculateAverageVector(vectors: List<Vector3D>): Vector3D {
+        val size = vectors.size.toDouble()
+        return Vector3D(
+            x = vectors.sumOf { it.x } / size,
+            y = vectors.sumOf { it.y } / size,
+            z = vectors.sumOf { it.z } / size
+        )
+    }
+
+    private fun calculateSeverity(value: Double, thresholds: Thresholds): Double {
+        val range = thresholds.danger - thresholds.warning
+        val excess = value - thresholds.warning
+        return (excess / range * 100.0).coerceIn(0.0, 100.0)
+    }
+}
+
+// Interface visual para os alertas
+class ManeuverAlertUI {
+    fun createAlertSymbol(alert: ManeuverAlert): AlertSymbol {
+        return AlertSymbol(
+            color = when (alert.level) {
+                AlertLevel.WARNING -> "#FFA500" // Amarelo
+                AlertLevel.DANGER -> "#FF0000"  // Vermelho
+                else -> "#FFFFFF"               // Branco
+            },
+            size = calculateSymbolSize(alert.severity),
+            animation = selectAnimation(alert.type, alert.level),
+            message = generateAlertMessage(alert)
+        )
+    }
+
+    private fun calculateSymbolSize(severity: Double): Int {
+        // Tamanho base de 48dp, aumenta com a severidade
+        return (48 + (severity * 0.24)).toInt()
+    }
+
+    private fun selectAnimation(type: ManeuverType, level: AlertLevel): String {
+        return when (type) {
+            ManeuverType.HARSH_BRAKING -> "pulse_fast"
+            ManeuverType.HARSH_TURNING -> "rotate_pulse"
+        }
+    }
+
+    private fun generateAlertMessage(alert: ManeuverAlert): String {
+        val maneuverType = when (alert.type) {
+            ManeuverType.HARSH_BRAKING -> "Frenagem Brusca"
+            ManeuverType.HARSH_TURNING -> "Curva Brusca"
+        }
+        
+        return when (alert.level) {
+            AlertLevel.WARNING -> "Atenção: $maneuverType"
+            AlertLevel.DANGER -> "Perigo: $maneuverType!"
+            else -> ""
+        }
+    }
+}
+
+data class AlertSymbol(
+    val color: String,
+    val size: Int,
+    val animation: String,
+    val message: String
+)

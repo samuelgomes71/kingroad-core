@@ -1,0 +1,228 @@
+data class LaundryService(
+    val id: String,
+    val name: String,
+    val location: Location,
+    val country: String,
+    val address: String,
+    val type: LaundryType,
+    val operatingHours: OperatingHours,
+    val services: List<WashingService>,
+    val facilities: LaundryFacilities,
+    val contact: ContactInfo,
+    val lastUpdate: Long = System.currentTimeMillis()
+)
+
+enum class LaundryType {
+    TRUCK_STOP,      // Parte de um posto de caminhões
+    DEDICATED,       // Lavanderia dedicada para caminhoneiros
+    SELF_SERVICE,    // Auto-serviço
+    FULL_SERVICE     // Serviço completo com atendentes
+}
+
+data class OperatingHours(
+    val weekday: Schedule,
+    val saturday: Schedule?,
+    val sunday: Schedule?,
+    val holidays: Schedule?,
+    val is24Hours: Boolean = false,
+    val specialNotes: String? = null
+)
+
+data class Schedule(
+    val opening: String,  // formato "HH:mm"
+    val closing: String   // formato "HH:mm"
+)
+
+data class WashingService(
+    val type: String,
+    val capacity: String,  // ex: "12kg", "20kg"
+    val duration: Int,     // minutos
+    val price: Price,
+    val isAvailable: Boolean = true
+)
+
+data class Price(
+    val amount: Double,
+    val currency: String,
+    val includesDetergent: Boolean = false
+)
+
+data class LaundryFacilities(
+    val totalWashers: Int,
+    val totalDryers: Int,
+    val hasWaitingArea: Boolean = false,
+    val hasRestroom: Boolean = false,
+    val hasVendingMachine: Boolean = false,
+    val hasWifi: Boolean = false,
+    val hasParking: Boolean = false,
+    val parkingSpots: Int = 0,
+    val acceptsCards: Boolean = false,
+    val hasChangeStation: Boolean = false
+)
+
+data class ContactInfo(
+    val phone: String?,
+    val whatsapp: String?,
+    val email: String?,
+    val website: String?
+)
+
+class TruckerLaundryService {
+    private val laundries = mutableMapOf<String, LaundryService>()
+
+    fun addLaundry(laundry: LaundryService) {
+        laundries[laundry.id] = laundry
+    }
+
+    fun getNearbyLaundries(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Double = 50.0,
+        filters: LaundryFilters = LaundryFilters()
+    ): List<LaundryService> {
+        return laundries.values.filter { laundry ->
+            // Verifica distância
+            val distance = calculateDistance(
+                latitude, longitude,
+                laundry.location.latitude, laundry.location.longitude
+            )
+            
+            if (distance > radiusKm) return@filter false
+            
+            // Aplica filtros
+            if (filters.type != null && laundry.type != filters.type) return@filter false
+            if (filters.minimumWashers > 0 && laundry.facilities.totalWashers < filters.minimumWashers) return@filter false
+            if (filters.requiresParking && !laundry.facilities.hasParking) return@filter false
+            if (filters.open24Hours && !laundry.operatingHours.is24Hours) return@filter false
+            if (filters.acceptsCards && !laundry.facilities.acceptsCards) return@filter false
+            
+            true
+        }.sortedBy { laundry ->
+            calculateDistance(
+                latitude, longitude,
+                laundry.location.latitude, laundry.location.longitude
+            )
+        }
+    }
+
+    data class LaundryFilters(
+        val type: LaundryType? = null,
+        val minimumWashers: Int = 0,
+        val requiresParking: Boolean = false,
+        val open24Hours: Boolean = false,
+        val acceptsCards: Boolean = false
+    )
+
+    // Exemplo de dados iniciais para diferentes países
+    fun initializeTestData() {
+        // França
+        addLaundry(
+            LaundryService(
+                id = "fr_paris_nord",
+                name = "Laverie Routier Paris Nord",
+                location = Location(48.9562, 2.4372),
+                country = "FR",
+                address = "Avenue des Nations, 93420 Villepinte",
+                type = LaundryType.TRUCK_STOP,
+                operatingHours = OperatingHours(
+                    weekday = Schedule("06:00", "22:00"),
+                    saturday = Schedule("07:00", "21:00"),
+                    sunday = Schedule("08:00", "20:00"),
+                    is24Hours = false
+                ),
+                services = listOf(
+                    WashingService(
+                        type = "Grande Capacité",
+                        capacity = "20kg",
+                        duration = 60,
+                        price = Price(12.0, "EUR", true)
+                    ),
+                    WashingService(
+                        type = "Extra Large",
+                        capacity = "25kg",
+                        duration = 75,
+                        price = Price(15.0, "EUR", true)
+                    )
+                ),
+                facilities = LaundryFacilities(
+                    totalWashers = 6,
+                    totalDryers = 8,
+                    hasWaitingArea = true,
+                    hasRestroom = true,
+                    hasWifi = true,
+                    hasParking = true,
+                    parkingSpots = 15,
+                    acceptsCards = true,
+                    hasChangeStation = true
+                ),
+                contact = ContactInfo(
+                    phone = "+33 1 48 63 00 00",
+                    whatsapp = "+33 1 48 63 00 00",
+                    email = "contact@laverieroutier.fr",
+                    website = null
+                )
+            )
+        )
+
+        // Alemanha
+        addLaundry(
+            LaundryService(
+                id = "de_hamburg",
+                name = "Autohof Waschanlage Hamburg",
+                location = Location(53.5511, 9.9937),
+                country = "DE",
+                address = "Autohofstraße 1, 22111 Hamburg",
+                type = LaundryType.SELF_SERVICE,
+                operatingHours = OperatingHours(
+                    weekday = Schedule("00:00", "23:59"),
+                    is24Hours = true
+                ),
+                services = listOf(
+                    WashingService(
+                        type = "Standard",
+                        capacity = "18kg",
+                        duration = 45,
+                        price = Price(10.0, "EUR", false)
+                    ),
+                    WashingService(
+                        type = "Groß",
+                        capacity = "25kg",
+                        duration = 60,
+                        price = Price(15.0, "EUR", false)
+                    )
+                ),
+                facilities = LaundryFacilities(
+                    totalWashers = 8,
+                    totalDryers = 10,
+                    hasWaitingArea = true,
+                    hasRestroom = true,
+                    hasVendingMachine = true,
+                    hasWifi = true,
+                    hasParking = true,
+                    parkingSpots = 20,
+                    acceptsCards = true
+                ),
+                contact = ContactInfo(
+                    phone = "+49 40 123456",
+                    whatsapp = null,
+                    email = "info@autohof-hamburg.de",
+                    website = "www.autohof-hamburg.de"
+                )
+            )
+        )
+    }
+
+    private fun calculateDistance(
+        lat1: Double, lon1: Double,
+        lat2: Double, lon2: Double
+    ): Double {
+        val R = 6371.0 // Raio da Terra em km
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLon = Math.toRadians(lon2 - lon1)
+        val a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                Math.sin(dLon/2) * Math.sin(dLon/2)
+        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+        return R * c
+    }
+}

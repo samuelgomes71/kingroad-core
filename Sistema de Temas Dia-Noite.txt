@@ -1,0 +1,118 @@
+// ThemeManager.kt
+class ThemeManager {
+    data class Theme(
+        val id: String,
+        val name: String,
+        val dayColors: ThemeColors,
+        val nightColors: ThemeColors,
+        val styles: ThemeStyles
+    )
+
+    data class ThemeColors(
+        val background: String,
+        val surface: String,
+        val primary: String,
+        val secondary: String,
+        val accent: String,
+        val warning: String,
+        val text: String,
+        val textSecondary: String,
+        val mapRoad: String,
+        val mapWater: String,
+        val mapLand: String,
+        val mapBackground: String
+    )
+
+    // Modern Theme
+    val modernTheme = Theme(
+        id = "modern",
+        name = "Modern",
+        dayColors = ThemeColors(
+            background = "#FFFFFF",
+            surface = "#F5F5F5",
+            primary = "#2196F3",
+            secondary = "#4CAF50",
+            accent = "#FF5722",
+            warning = "#FFC107",
+            text = "#212121",
+            textSecondary = "#757575",
+            mapRoad = "#FFFFFF",
+            mapWater = "#E3F2FD",
+            mapLand = "#C8E6C9",
+            mapBackground = "#FAFAFA"
+        ),
+        nightColors = ThemeColors(
+            background = "#0A0A0A",
+            surface = "#1A1A1A",
+            primary = "#3498db",
+            secondary = "#2ecc71",
+            accent = "#e74c3c",
+            warning = "#f1c40f",
+            text = "#FFFFFF",
+            textSecondary = "#95a5a6",
+            mapRoad = "#2c3e50",
+            mapWater = "#2980b9",
+            mapLand = "#27ae60",
+            mapBackground = "#121212"
+        ),
+        styles = ThemeStyles(...)
+    )
+
+    // Classic Theme
+    val classicTheme = Theme(
+        id = "classic",
+        name = "Classic",
+        dayColors = ThemeColors(
+            background = "#FAFAFA",
+            surface = "#FFFFFF",
+            primary = "#1976D2",
+            secondary = "#388E3C",
+            accent = "#D32F2F",
+            warning = "#FFA000",
+            text = "#212121",
+            textSecondary = "#757575",
+            mapRoad = "#FFFFFF",
+            mapWater = "#BBDEFB",
+            mapLand = "#C8E6C9",
+            mapBackground = "#F5F5F5"
+        ),
+        nightColors = ThemeColors(
+            background = "#141E30",
+            surface = "#243B55",
+            primary = "#4A90E2",
+            secondary = "#50C878",
+            accent = "#FF6B6B",
+            warning = "#FFB900",
+            text = "#FFFFFF",
+            textSecondary = "#B8C6D1",
+            mapRoad = "#465670",
+            mapWater = "#4A90E2",
+            mapLand = "#50C878",
+            mapBackground = "#0A1014"
+        ),
+        styles = ThemeStyles(...)
+    )
+
+    fun getThemeColors(themeId: String, isDayMode: Boolean): ThemeColors {
+        val theme = themes.find { it.id == themeId } ?: themes.first()
+        return if (isDayMode) theme.dayColors else theme.nightColors
+    }
+
+    fun shouldUseDayMode(hour: Int): Boolean {
+        return hour in 6..17  // Dia: 6h às 17h
+    }
+
+    // Função auxiliar para transição suave entre modos
+    fun getTransitionColors(fromColors: ThemeColors, toColors: ThemeColors, progress: Float): ThemeColors {
+        fun interpolateColor(from: String, to: String, progress: Float): String {
+            // Implementar interpolação de cores
+            return if (progress < 0.5f) from else to
+        }
+
+        return ThemeColors(
+            background = interpolateColor(fromColors.background, toColors.background, progress),
+            surface = interpolateColor(fromColors.surface, toColors.surface, progress),
+            // ... outros campos interpolados
+        )
+    }
+}

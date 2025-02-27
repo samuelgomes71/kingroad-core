@@ -1,0 +1,214 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  AlertTriangle, 
+  CheckCircle, 
+  XCircle, 
+  RefreshCw,
+  Download,
+  Activity,
+  Settings,
+  Info
+} from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
+const SystemDiagnostics = () => {
+  // Estados para diagnóstico e testes
+  const [testResults, setTestResults] = useState({});
+  const [isRunning, setIsRunning] = useState(false);
+  const [errorLog, setErrorLog] = useState([]);
+  const [storageStatus, setStorageStatus] = useState(null);
+
+  // Funções de teste básicas
+  const runStorageTest = () => {
+    try {
+      const testKey = 'test_storage';
+      localStorage.setItem(testKey, 'test');
+      const result = localStorage.getItem(testKey) === 'test';
+      localStorage.removeItem(testKey);
+      return result;
+    } catch (error) {
+      logError('Storage Test', error);
+      return false;
+    }
+  };
+
+  const runConnectionTest = () => {
+    return navigator.onLine;
+  };
+
+  const checkStorageSpace = () => {
+    try {
+      let used = 0;
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        used += localStorage.getItem(key).length;
+      }
+      return {
+        used: Math.round(used / 1024),
+        total: 5120 // Estimativa de 5MB
+      };
+    } catch (error) {
+      logError('Storage Space Check', error);
+      return null;
+    }
+  };
+
+  // Logger de erros
+  const logError = (context, error) => {
+    setErrorLog(prev => [...prev, {
+      context,
+      message: error.message || 'Erro desconhecido',
+      timestamp: new Date().toISOString()
+    }]);
+  };
+
+  // Executar todos os testes
+  const runAllTests = async () => {
+    setIsRunning(true);
+    
+    const results = {
+      storage: runStorageTest(),
+      connection: runConnectionTest(),
+      space: checkStorageSpace()
+    };
+
+    setTestResults(results);
+    setStorageStatus(results.space);
+    setIsRunning(false);
+  };
+
+  // Componente de Resultados
+  const TestResults = () => (
+    <div className="space-y-3">
+      {Object.entries(testResults).map(([key, value]) => {
+        if (key === 'space') return null;
+        return (
+          <div key={key} className="flex items-center justify-between bg-gray-800 p-3 rounded">
+            <div className="flex items-center">
+              {value ? (
+                <CheckCircle className="text-green-500 mr-2" size={20} />
+              ) : (
+                <XCircle className="text-red-500 mr-2" size={20} />
+              )}
+              <span className="text-white capitalize">
+                {key === 'storage' ? 'Armazenamento Local' : 'Conexão'}
+              </span>
+            </div>
+            <span className={value ? 'text-green-500' : 'text-red-500'}>
+              {value ? 'OK' : 'Falha'}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // Componente de Status de Armazenamento
+  const StorageStatus = () => (
+    storageStatus && (
+      <div className="mt-4 bg-gray-800 p-4 rounded">
+        <h3 className="text-white font-medium mb-2">Status do Armazenamento</h3>
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <span className="text-gray-400">Usado</span>
+            <span className="text-white">{storageStatus.used} KB</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-400">Total</span>
+            <span className="text-white">{storageStatus.total} KB</span>
+          </div>
+          <div className="h-2 bg-gray-700 rounded overflow-hidden">
+            <div 
+              className="h-full bg-blue-600"
+              style={{ width: `${(storageStatus.used / storageStatus.total) * 100}%` }}
+            />
+          </div>
+        </div>
+      </div>
+    )
+  );
+
+  // Componente de Log de Erros
+  const ErrorLog = () => (
+    <div className="mt-4">
+      <h3 className="text-white font-medium mb-2 flex items-center">
+        <AlertTriangle size={16} className="mr-2" />
+        Log de Erros
+      </h3>
+      <div className="bg-gray-800 rounded max-h-48 overflow-y-auto">
+        {errorLog.length === 0 ? (
+          <p className="text-gray-400 p-3">Nenhum erro registrado</p>
+        ) : (
+          errorLog.map((log, index) => (
+            <div key={index} className="p-3 border-b border-gray-700">
+              <div className="flex justify-between">
+                <span className="text-red-500">{log.context}</span>
+                <span className="text-gray-400 text-sm">
+                  {new Date(log.timestamp).toLocaleTimeString()}
+                </span>
+              </div>
+              <p className="text-white mt-1">{log.message}</p>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+
+  // Ações de Manutenção
+  const MaintenanceActions = () => (
+    <div className="mt-4">
+      <h3 className="text-white font-medium mb-2">Ações de Manutenção</h3>
+      <div className="grid grid-cols-2 gap-3">
+        <button 
+          className="bg-blue-600 text-white p-2 rounded flex items-center justify-center"
+          onClick={() => {
+            localStorage.clear();
+            runAllTests();
+          }}
+        >
+          <RefreshCw size={16} className="mr-2" />
+          Limpar Cache
+        </button>
+        <button 
+          className="bg-blue-600 text-white p-2 rounded flex items-center justify-center"
+          onClick={() => {
+            const data = JSON.stringify(localStorage);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'kingroad_backup.json';
+            a.click();
+          }}
+        >
+          <Download size={16} className="mr-2" />
+          Backup Dados
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="bg-gray-900 p-4 rounded-lg">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl text-white font-bold">Diagnóstico do Sistema</h2>
+        <button 
+          className="bg-blue-600 text-white px-4 py-2 rounded flex items-center"
+          onClick={runAllTests}
+          disabled={isRunning}
+        >
+          <Activity size={16} className="mr-2" />
+          {isRunning ? 'Executando...' : 'Executar Testes'}
+        </button>
+      </div>
+
+      <TestResults />
+      <StorageStatus />
+      <ErrorLog />
+      <MaintenanceActions />
+    </div>
+  );
+};
+
+export default SystemDiagnostics;

@@ -1,0 +1,257 @@
+import React, { useState } from 'react';
+import { 
+  Factory, 
+  Clock, 
+  Phone, 
+  Car,
+  Truck,
+  AlertCircle,
+  Map,
+  ShieldCheck,
+  Timer,
+  Coffee,
+  Wifi,
+  X
+} from 'lucide-react';
+
+const CarFactoryPOI = () => {
+  const [selectedFactory, setSelectedFactory] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [filters, setFilters] = useState({
+    requiresParking: false,
+    operationalLoadingPoints: true,
+    manufacturer: ''
+  });
+
+  const StatusBadge = ({ status }) => {
+    const colors = {
+      OPERATIONAL: 'bg-green-100 text-green-800',
+      BUSY: 'bg-yellow-100 text-yellow-800',
+      MAINTENANCE: 'bg-orange-100 text-orange-800',
+      CLOSED: 'bg-red-100 text-red-800'
+    };
+
+    return (
+      <span className={`px-2 py-1 rounded-full text-sm ${colors[status]}`}>
+        {status}
+      </span>
+    );
+  };
+
+  const FactoryMarker = ({ factory, onClick }) => (
+    <div 
+      className="relative cursor-pointer"
+      onClick={() => onClick(factory)}
+    >
+      <div className="absolute flex items-center justify-center w-8 h-8 bg-blue-500 rounded-full hover:bg-blue-600">
+        <Factory className="w-5 h-5 text-white" />
+      </div>
+      {factory.loadingPoints.some(point => point.status === 'OPERATIONAL') && (
+        <div className="absolute -top-2 -right-2 w-4 h-4 bg-green-500 rounded-full" />
+      )}
+    </div>
+  );
+
+  const FactoryDetails = ({ factory }) => (
+    <div className="bg-white rounded-lg shadow-lg p-4">
+      <div className="flex justify-between items-start">
+        <div>
+          <h3 className="text-xl font-bold">{factory.name}</h3>
+          <p className="text-gray-600">{factory.address}</p>
+        </div>
+        <button 
+          onClick={() => setShowDetails(false)}
+          className="p-1 hover:bg-gray-100 rounded-full"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Manufacturer Info */}
+      <div className="mt-4 flex items-center">
+        <Car className="w-5 h-5 mr-2 text-blue-600" />
+        <span className="font-medium">{factory.manufacturer}</span>
+      </div>
+
+      {/* Access Routes */}
+      <div className="mt-4">
+        <h4 className="font-medium mb-2">Truck Access Points:</h4>
+        {factory.location.accessRoutes.map((route, index) => (
+          <div key={index} className="bg-gray-50 rounded-lg p-3 mb-2">
+            <div className="flex items-center">
+              <Truck className="w-4 h-4 mr-2 text-gray-600" />
+              <span className="font-medium">{route.name}</span>
+            </div>
+            <p className="text-sm text-gray-600 mt-1">{route.instructions}</p>
+            {route.restrictions.map((restriction, idx) => (
+              <div key={idx} className="text-sm text-red-600 mt-1">
+                <AlertCircle className="w-4 h-4 inline mr-1" />
+                {restriction.type}: {restriction.value}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {/* Loading Points */}
+      <div className="mt-4">
+        <h4 className="font-medium mb-2">Loading Docks:</h4>
+        <div className="space-y-2">
+          {factory.loadingPoints.map((point, index) => (
+            <div key={index} className="bg-gray-50 rounded-lg p-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-medium">{point.name}</p>
+                  <p className="text-sm text-gray-600">
+                    Capacity: {point.capacity} vehicles
+                  </p>
+                </div>
+                <StatusBadge status={point.status} />
+              </div>
+              <p className="text-sm text-gray-600 mt-2">{point.instructions}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Operating Hours */}
+      <div className="mt-4">
+        <h4 className="font-medium mb-2">Operating Hours:</h4>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <div className="space-y-2">
+            <div>
+              <span className="text-sm font-medium">Loading Hours:</span>
+              <p className="text-sm">
+                Mon-Fri: {factory.operatingHours.loadingHours.weekday.start} - {factory.operatingHours.loadingHours.weekday.end}
+              </p>
+              {factory.operatingHours.loadingHours.saturday && (
+                <p className="text-sm">
+                  Sat: {factory.operatingHours.loadingHours.saturday.start} - {factory.operatingHours.loadingHours.saturday.end}
+                </p>
+              )}
+            </div>
+            <div>
+              <span className="text-sm font-medium">Security Office:</span>
+              <p className="text-sm">
+                24/7 Available
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Security Requirements */}
+      <div className="mt-4">
+        <h4 className="font-medium mb-2">Security Requirements:</h4>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <div className="space-y-2">
+            {factory.securityRequirements.requiresPreRegistration && (
+              <div className="flex items-center">
+                <ShieldCheck className="w-4 h-4 mr-2 text-blue-600" />
+                <span className="text-sm">Pre-registration required</span>
+              </div>
+            )}
+            {factory.securityRequirements.specialDocuments.map((doc, index) => (
+              <div key={index} className="text-sm ml-6">
+                • {doc}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Facilities */}
+      <div className="mt-4">
+        <h4 className="font-medium mb-2">Facilities:</h4>
+        <div className="flex flex-wrap gap-4">
+          {factory.facilities.hasDriverRoom && (
+            <div className="flex items-center">
+              <Coffee className="w-4 h-4 mr-1 text-blue-600" />
+              <span className="text-sm">Driver Room</span>
+            </div>
+          )}
+          {factory.facilities.hasWifi && (
+            <div className="flex items-center">
+              <Wifi className="w-4 h-4 mr-1 text-blue-600" />
+              <span className="text-sm">WiFi</span>
+            </div>
+          )}
+          {factory.facilities.hasParking && (
+            <div className="flex items-center">
+              <Car className="w-4 h-4 mr-1 text-blue-600" />
+              <span className="text-sm">{factory.facilities.parkingCapacity} Parking Spots</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Contact Info */}
+      <div className="mt-4 space-y-2">
+        {factory.contact.loadingDock && (
+          <div className="flex items-center">
+            <Phone className="w-4 h-4 mr-2 text-gray-600" />
+            <a href={`tel:${factory.contact.loadingDock}`} className="text-blue-600 hover:underline">
+              {factory.contact.loadingDock} (Loading Dock)
+            </a>
+          </div>
+        )}
+        {factory.contact.security && (
+          <div className="flex items-center">
+            <Phone className="w-4 h-4 mr-2 text-gray-600" />
+            <a href={`tel:${factory.contact.security}`} className="text-blue-600 hover:underline">
+              {factory.contact.security} (Security)
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="relative">
+      {/* Filters */}
+      <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-4 z-10">
+        <h3 className="font-bold mb-3">Filter Factories</h3>
+        <div className="space-y-2">
+          <label className="flex items-center space-x-2">
+            <input 
+              type="checkbox"
+              checked={filters.requiresParking}
+              onChange={(e) => setFilters({...filters, requiresParking: e.target.checked})}
+              className="form-checkbox"
+            />
+            <span>With Parking</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input 
+              type="checkbox"
+              checked={filters.operationalLoadingPoints}
+              onChange={(e) => setFilters({...filters, operationalLoadingPoints: e.target.checked})}
+              className="form-checkbox"
+            />
+            <span>Operational Loading Points</span>
+          </label>
+          <select
+            value={filters.manufacturer}
+            onChange={(e) => setFilters({...filters, manufacturer: e.target.value})}
+            className="w-full mt-2 p-2 border rounded"
+          >
+            <option value="">All Manufacturers</option>
+            <option value="Volkswagen">Volkswagen</option>
+            <option value="Toyota">Toyota</option>
+            <option value="BMW">BMW</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Factory Details */}
+      {selectedFactory && showDetails && (
+        <div className="absolute bottom-4 left-4 right-4 z-10">
+          <FactoryDetails factory={selectedFactory} />
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default CarFactoryPOI;
