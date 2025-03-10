@@ -1,4 +1,0 @@
-/app/src/main/java/com/kingroad/diagnostics/
-├── SystemDiagnostics.kt
-├── TestRunner.kt
-└── ErrorReporting.kt
