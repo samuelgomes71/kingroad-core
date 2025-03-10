@@ -1,4 +1,0 @@
-/diagnostics/
-├── SystemDiagnostics.jsx
-├── TestRunner.js
-└── ErrorReporting.js
