@@ -1,5 +1,0 @@
-enum class POIType {
-    BULLTEL,                // Paradas para descanso de animais
-    FUEL_DISTRIBUTOR,       // Distribuidoras de combustível
-    TRUCKER_LAUNDRY,        // Lavanderias para caminhoneiros
-    TRUCK_STOP
