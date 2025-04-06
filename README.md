@@ -1,80 +1,36 @@
-# 🛣️ KingRoad
 
-**KingRoad** é um aplicativo multiplataforma de navegação e assistência inteligente para caminhoneiros e motoristas de veículos pesados. Criado com foco em segurança, eficiência e personalização, ele integra ferramentas de navegação avançadas, atualização em tempo real de POIs, modos de trilha e suporte ao escaneamento de documentos (via KingScan Lite).
+# KingRoad Core
 
-## 📱 Plataformas Suportadas
+## Descrição do Projeto
+KingRoad é uma plataforma avançada de navegação e assistência inteligente desenhada especificamente para caminhoneiros e motoristas de veículos pesados. Este projeto integra múltiplas funcionalidades para facilitar a logística e a segurança na estrada, incluindo suporte para documentação digital e comunicação em tempo real.
 
-- 📱 **Mobile:** React Native (iOS & Android)
-- 🌐 **Web:** React + Tailwind CSS
-- ⚙️ **Core:** Kotlin Multiplatform
-- 🔙 **Backend:** Node.js com PostgreSQL + Firebase
-- ☁️ **Infra:** AWS, Google Cloud, Azure (multi-cloud)
+### Principais Funcionalidades
+- **Navegação Otimizada**: Utiliza dados em tempo real para oferecer a melhor rota possível, considerando fatores como tráfego, condições da estrada, e restrições locais.
+- **Assistência de Documentação**: Integração com o KingScan para digitalização e gerenciamento de documentos importantes, como CNH e CRLV.
+- **Comunicação Eficiente**: Permite comunicação direta entre motoristas através do KingChat, facilitando a troca de informações e alertas.
+- **Monitoramento de Condições de Trânsito**: Alertas em tempo real sobre condições adversas ou mudanças significativas na rota.
 
-## 🚛 Funcionalidades Principais
+## Arquitetura
+Este projeto está dividido em várias partes para garantir modularidade e facilidade de manutenção:
 
-- Navegação adaptada para caminhões (restrições de altura, peso e carga)
-- Atualização em tempo real de POIs (postos, mecânicas, áreas de descanso)
-- Modo offline com cache de mapas
-- Feedback e avaliação de locais por motoristas
-- Alertas inteligentes de segurança em rota
-- Visualização por satélite com sobreposição de rotas
-- Gravação de trilhas (hike, bike, moto, 4x4, snowmobile)
-- Perfis de veículos customizáveis
-- Preferências de rota: evitar pedágios, escolher tipo de via
-- Integração com KingScan Lite para escaneamento de documentos (modo caminhões)
-- Suporte completo a motos (modo urbano, rodoviário, off-road)
-- Tela inicial personalizável
-- Assistente de voz com linguagem PX de caminhoneiro (QRA, 10-4, etc.)
+- **Frontend**: Desenvolvido em React Native para aplicativos móveis e React.js para a interface web.
+- **Backend**: Utiliza Node.js com frameworks Express e NestJS para uma estrutura robusta e modular.
+- **Banco de Dados**: PostgreSQL para dados relacionais, com Redis para caching e MongoDB para armazenamento de logs e documentos.
 
-## 🧱 Estrutura do Projeto
+### Internacionalização
+Suporte para múltiplos idiomas, facilitando o uso global da aplicação.
 
-- `navigation-core/` → Motor de navegação e roteamento
-- `poi-engine/` → Sistema de pontos de interesse
-- `offline-support/` → Gerenciamento de mapas offline
-- `trail-tracker/` → Módulo de trilhas e gravação de percurso
-- `user-feedback/` → Sistema de avaliações e comentários
-- `vehicle-profiles/` → Configurações por tipo de veículo
-- `kingscan-lite/` → Integração com scanner de documentos simples
-- `satellite-layer/` → Visualização com imagens de satélite
-- `mascot-engine/` → Gerenciamento do mascote Tio Sam
-- `home-screen/` → Customização da tela inicial
+## Configuração do Projeto
+Instruções para configuração local e inicialização do projeto.
 
-## 🎨 Identidade Visual
+### Pré-requisitos
+Lista de todas as dependências necessárias para executar o projeto localmente, como Node.js, PostgreSQL, etc.
 
-- Paleta: preto fosco, bronze, dourado e bege
-- Mascote: **Tio Sam**, com variações regionais
-- Estilo de linguagem: comunicação de rádio PX (CB) com uso de QRA
+### Instalação
+Passo a passo para clonar o repositório, instalar dependências e rodar o projeto em um ambiente de desenvolvimento local.
 
-## 🧠 IA e Inteligência Embarcada
-
-- Sugestões automáticas de rota com base no histórico e segurança
-- Alertas preditivos baseados em segmentação de risco
-- Assistente de voz com vocabulário de caminhoneiros
-
-## 📂 Organização dos Dados
-
-- **Mapas:** cache local e sincronização com nuvem
-- **POIs:** base atualizável em tempo real
-- **Documentos:** armazenamento temporário local via KingScan Lite
-
-## 🧪 Tecnologias e Dependências
-
-- Kotlin Multiplatform
-- React Native & React.js
-- Node.js + PostgreSQL
-- Firebase Auth e Sync
-- Mapbox SDK ou similar
-- OCR básico para scanner
-- Tailwind CSS
-- Docker, CI/CD (DevOps)
-
-## 📌 Observações
-
-- Este repositório usa apenas a pasta `poi/` (substituindo a antiga `POIS/`)
-- O app será lançado inicialmente como beta gratuito por 6 meses, com aviso de monetização de 30 dias
-- Código modular e preparado para expansão com novos modos e veículos
-
----
-
-> Projeto criado por Samuel como parte do ecossistema **Família King**.
-
+```bash
+git clone https://github.com/seu-usuario/kingroad-core.git
+cd kingroad-core
+npm install
+npm start
