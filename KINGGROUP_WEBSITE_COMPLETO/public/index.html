@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KingGroup - Soluções Inteligentes</title>
+    <meta name="description" content="KingGroup - Sistema completo de aplicativos para transporte e logística">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #965A38 0%, #F5F1E6 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        header {
+            background: rgba(150, 90, 56, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #F5F1E6;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: #F5F1E6;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: #8B4513;
+        }
+
+        main {
+            margin-top: 80px;
+            padding: 2rem 0;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 4rem 0;
+            background: rgba(245, 241, 230, 0.9);
+            border-radius: 20px;
+            margin: 2rem 0;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            color: #965A38;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            color: #8B4513;
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .app-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .app-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 50px rgba(150, 90, 56, 0.2);
+            border-color: #965A38;
+        }
+
+        .app-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #965A38, #8B4513);
+            border-radius: 20px;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+        }
+
+        .app-card h3 {
+            color: #965A38;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .app-card p {
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #965A38, #8B4513);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .download-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(150, 90, 56, 0.4);
+        }
+
+        .admin-section {
+            background: rgba(139, 69, 19, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 3rem 0;
+            text-align: center;
+        }
+
+        .admin-btn {
+            background: linear-gradient(135deg, #8B4513, #965A38);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 1rem;
+        }
+
+        .admin-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(139, 69, 19, 0.4);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 3rem 0;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #965A38;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        footer {
+            background: #965A38;
+            color: #F5F1E6;
+            text-align: center;
+            padding: 2rem 0;
+            margin-top: 4rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #965A38;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #965A38;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #965A38;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #965A38;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+            
+            .apps-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="container">
+            <a href="#" class="logo">KingGroup</a>
+            <ul class="nav-links">
+                <li><a href="#home">Início</a></li>
+                <li><a href="#apps">Aplicativos</a></li>
+                <li><a href="#admin">Admin</a></li>
+                <li><a href="#stats">Estatísticas</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <section id="home" class="hero">
+            <h1>KingGroup</h1>
+            <p>Soluções inteligentes para transporte e logística. Baixe nossos aplicativos e otimize suas operações.</p>
+        </section>
+
+        <section id="stats" class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalApps">-</div>
+                <div class="stat-label">Aplicativos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalDownloads">-</div>
+                <div class="stat-label">Downloads</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalVersions">-</div>
+                <div class="stat-label">Versões</div>
+            </div>
+        </section>
+
+        <section id="apps" class="apps-grid">
+            <!-- Apps serão carregados dinamicamente -->
+        </section>
+
+        <section id="admin" class="admin-section">
+            <h2 style="color: #965A38; margin-bottom: 1rem;">Painel Administrativo</h2>
+            <p style="color: #666; margin-bottom: 2rem;">Gerencie uploads de APKs e configurações do sistema</p>
+            <button class="admin-btn" onclick="showLoginModal()">Fazer Login</button>
+            <button class="admin-btn" onclick="showUploadModal()" id="uploadBtn" style="display: none;">Upload APK</button>
+            <button class="admin-btn" onclick="logout()" id="logoutBtn" style="display: none;">Logout</button>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 KingGroup Solutions. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- Modal de Login -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('loginModal')">&times;</span>
+            <h2 style="color: #965A38; margin-bottom: 1rem;">Login Administrativo</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Senha:</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit" class="download-btn" style="width: 100%;">Entrar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Upload -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('uploadModal')">&times;</span>
+            <h2 style="color: #965A38; margin-bottom: 1rem;">Upload de APK</h2>
+            <form id="uploadForm">
+                <div class="form-group">
+                    <label for="appSelect">Aplicativo:</label>
+                    <select id="appSelect" required>
+                        <option value="">Selecione um aplicativo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="version">Versão:</label>
+                    <input type="text" id="version" placeholder="Ex: 1.0.0" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Descrição:</label>
+                    <textarea id="description" rows="3" placeholder="Descrição das mudanças..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="apkFile">Arquivo APK:</label>
+                    <input type="file" id="apkFile" accept=".apk" required>
+                </div>
+                <button type="submit" class="download-btn" style="width: 100%;">Fazer Upload</button>
+            </form>
+            <div class="loading" id="uploadLoading">
+                <div class="spinner"></div>
+                <p>Fazendo upload...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyC82e58ebc8985504f56e3f9218ca9a32dKingRoadSamuel",
+            authDomain: "upbeat-circlet-460522-r0-98a40.firebaseapp.com",
+            databaseURL: "https://upbeat-circlet-460522-r0-98a40-default-rtdb.firebaseio.com/",
+            projectId: "upbeat-circlet-460522-r0-98a40",
+            storageBucket: "upbeat-circlet-460522-r0-98a40.appspot.com",
+            messagingSenderId: "41693764100",
+            appId: "1:41693764100:web:kingroad-app-id"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let currentUser = null;
+
+        // Aplicativos padrão
+        const defaultApps = [
+            {
+                id: 'kingroad',
+                name: 'KingRoad',
+                description: 'GPS inteligente para caminhoneiros com alertas de segurança',
+                icon: '🚛',
+                latestVersion: '2.1.0',
+                downloads: 15420
+            },
+            {
+                id: 'kingchat',
+                name: 'KingChat',
+                description: 'Sistema de comunicação para frotas e motoristas',
+                icon: '💬',
+                latestVersion: '1.5.2',
+                downloads: 8930
+            },
+            {
+                id: 'kingdefrag',
+                name: 'KingDefrag',
+                description: 'Otimizador de rotas e combustível',
+                icon: '⚡',
+                latestVersion: '1.3.1',
+                downloads: 5670
+            },
+            {
+                id: 'kingloc',
+                name: 'KingLoc',
+                description: 'Rastreamento e monitoramento de veículos',
+                icon: '📍',
+                latestVersion: '2.0.0',
+                downloads: 12340
+            },
+            {
+                id: 'kingscan',
+                name: 'KingScan',
+                description: 'Scanner de documentos para transportadores',
+                icon: '📄',
+                latestVersion: '1.8.0',
+                downloads: 7890
+            }
+        ];
+
+        // Carregar aplicativos
+        async function loadApps() {
+            try {
+                const response = await fetch('/api/apps');
+                let apps = await response.json();
+                
+                // Se não houver apps no banco, usar os padrão
+                if (apps.length === 0) {
+                    apps = defaultApps;
+                }
+
+                const appsGrid = document.getElementById('apps');
+                appsGrid.innerHTML = '';
+
+                apps.forEach(app => {
+                    const appCard = document.createElement('div');
+                    appCard.className = 'app-card';
+                    appCard.innerHTML = `
+                        <div class="app-icon">${app.icon || '📱'}</div>
+                        <h3>${app.name}</h3>
+                        <p>${app.description}</p>
+                        <p><strong>Versão:</strong> ${app.latestVersion || 'N/A'}</p>
+                        <p><strong>Downloads:</strong> ${(app.downloads || 0).toLocaleString()}</p>
+                        <a href="/api/apps/${app.id}/download/${app.latestVersion}" class="download-btn">
+                            Baixar APK
+                        </a>
+                    `;
+                    appsGrid.appendChild(appCard);
+                });
+
+                // Atualizar select do modal de upload
+                const appSelect = document.getElementById('appSelect');
+                appSelect.innerHTML = '<option value="">Selecione um aplicativo</option>';
+                apps.forEach(app => {
+                    const option = document.createElement('option');
+                    option.value = app.id;
+                    option.textContent = app.name;
+                    appSelect.appendChild(option);
+                });
+
+            } catch (error) {
+                console.error('Erro ao carregar apps:', error);
+            }
+        }
+
+        // Carregar estatísticas
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+
+                document.getElementById('totalApps').textContent = stats.totalApps || defaultApps.length;
+                document.getElementById('totalDownloads').textContent = (stats.totalDownloads || 50250).toLocaleString();
+                document.getElementById('totalVersions').textContent = stats.totalVersions || defaultApps.length;
+
+            } catch (error) {
+                console.error('Erro ao carregar estatísticas:', error);
+                // Usar valores padrão
+                document.getElementById('totalApps').textContent = defaultApps.length;
+                document.getElementById('totalDownloads').textContent = '50.250';
+                document.getElementById('totalVersions').textContent = defaultApps.length;
+            }
+        }
+
+        // Modais
+        function showLoginModal() {
+            document.getElementById('loginModal').style.display = 'block';
+        }
+
+        function showUploadModal() {
+            document.getElementById('uploadModal').style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                closeModal('loginModal');
+                updateAuthUI();
+            } catch (error) {
+                alert('Erro no login: ' + error.message);
+            }
+        });
+
+        // Upload
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!currentUser) {
+                alert('Você precisa estar logado para fazer upload');
+                return;
+            }
+
+            const appId = document.getElementById('appSelect').value;
+            const version = document.getElementById('version').value;
+            const description = document.getElementById('description').value;
+            const file = document.getElementById('apkFile').files[0];
+
+            if (!file) {
+                alert('Selecione um arquivo APK');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('apk', file);
+            formData.append('version', version);
+            formData.append('description', description);
+
+            document.getElementById('uploadLoading').style.display = 'block';
+
+            try {
+                const token = await currentUser.getIdToken();
+                const response = await fetch(`/api/apps/${appId}/upload`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Upload realizado com sucesso!');
+                    closeModal('uploadModal');
+                    loadApps();
+                    loadStats();
+                } else {
+                    alert('Erro no upload: ' + result.error);
+                }
+
+            } catch (error) {
+                alert('Erro no upload: ' + error.message);
+            } finally {
+                document.getElementById('uploadLoading').style.display = 'none';
+            }
+        });
+
+        // Logout
+        function logout() {
+            auth.signOut();
+        }
+
+        // Atualizar UI de autenticação
+        function updateAuthUI() {
+            const uploadBtn = document.getElementById('uploadBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            
+            if (currentUser) {
+                uploadBtn.style.display = 'inline-block';
+                logoutBtn.style.display = 'inline-block';
+            } else {
+                uploadBtn.style.display = 'none';
+                logoutBtn.style.display = 'none';
+            }
+        }
+
+        // Observador de autenticação
+        auth.onAuthStateChanged((user) => {
+            currentUser = user;
+            updateAuthUI();
+        });
+
+        // Fechar modal ao clicar fora
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+
+        // Carregar dados ao inicializar
+        document.addEventListener('DOMContentLoaded', () => {
+            loadApps();
+            loadStats();
+        });
+    </script>
+</body>
+</html>
+
